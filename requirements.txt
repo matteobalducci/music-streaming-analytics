@@ -1,3 +1,10 @@
+# Core (dataset generation, charts, data-quality checks)
 pandas>=2.0
 numpy>=1.24
 matplotlib>=3.7
+
+# BigQuery loading (scripts/load_bigquery.py)
+google-cloud-bigquery>=3.11
+
+# dbt on BigQuery (dbt/streaming) — install when you build the models
+# dbt-bigquery>=1.7

@@ -1,0 +1,11 @@
+# Copy to ~/.dbt/profiles.yml and fill in your BigQuery project.
+streaming:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: your-gcp-project
+      dataset: streaming
+      threads: 4
+      location: EU

@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: fct_streams
+    description: >
+      Fact table at the grain of one listening event, enriched with
+      completion ratio and an engagement flag.
+    columns:
+      - name: user_id
+        tests: [not_null]
+      - name: track_id
+        description: FK to dim_track.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_tracks')
+              field: track_id
+      - name: stream_source
+        tests:
+          - accepted_values:
+              values: ['Algorithmic', 'Editorial', 'Radio', 'Search']
+      - name: completion_ratio
+        description: Share of the track listened to, 0..1.
+      - name: is_engaged_stream
+        tests: [not_null]
+
+  - name: mart_discovery_efficiency
+    description: Weekly product KPIs per discovery source.
+    columns:
+      - name: stream_source
+        tests: [not_null, unique]
+      - name: skip_rate_pct
+        tests: [not_null]

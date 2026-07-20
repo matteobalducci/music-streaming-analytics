@@ -1,0 +1,101 @@
+track_id,track_title,artist_id,main_genre,total_duration_sec,is_frontline
+1,Track_1,1,Hip Hop,222,True
+2,Track_2,2,Rock,184,False
+3,Track_3,3,Reggaeton,152,False
+4,Track_4,4,Pop,258,True
+5,Track_5,5,Reggaeton,271,True
+6,Track_6,6,Hip Hop,293,False
+7,Track_7,7,Hip Hop,268,False
+8,Track_8,8,Pop,157,False
+9,Track_9,9,Reggaeton,167,True
+10,Track_10,10,Indie,282,True
+11,Track_11,11,Classical,208,False
+12,Track_12,12,Reggaeton,271,False
+13,Track_13,13,Indie,183,True
+14,Track_14,14,Rock,243,True
+15,Track_15,15,Indie,270,False
+16,Track_16,16,Classical,255,False
+17,Track_17,17,Hip Hop,260,True
+18,Track_18,18,Reggaeton,238,False
+19,Track_19,19,Hip Hop,248,False
+20,Track_20,20,Classical,235,False
+21,Track_21,1,Electronic,215,False
+22,Track_22,2,Classical,283,False
+23,Track_23,3,Hip Hop,282,False
+24,Track_24,4,Rock,277,False
+25,Track_25,5,Indie,285,False
+26,Track_26,6,Electronic,298,False
+27,Track_27,7,Reggaeton,254,True
+28,Track_28,8,Hip Hop,256,False
+29,Track_29,9,Indie,151,False
+30,Track_30,10,Indie,171,True
+31,Track_31,11,Indie,167,False
+32,Track_32,12,Classical,206,False
+33,Track_33,13,Hip Hop,261,True
+34,Track_34,14,Indie,174,False
+35,Track_35,15,Electronic,172,False
+36,Track_36,16,Rock,193,False
+37,Track_37,17,Rock,252,True
+38,Track_38,18,Electronic,196,False
+39,Track_39,19,Indie,296,False
+40,Track_40,20,Hip Hop,294,True
+41,Track_41,1,Electronic,272,True
+42,Track_42,2,Indie,162,False
+43,Track_43,3,Reggaeton,254,False
+44,Track_44,4,Classical,179,True
+45,Track_45,5,Pop,221,False
+46,Track_46,6,Indie,213,False
+47,Track_47,7,Pop,209,False
+48,Track_48,8,Hip Hop,225,False
+49,Track_49,9,Pop,152,True
+50,Track_50,10,Electronic,277,False
+51,Track_51,11,Rock,238,False
+52,Track_52,12,Rock,278,True
+53,Track_53,13,Rock,204,True
+54,Track_54,14,Rock,274,False
+55,Track_55,15,Hip Hop,199,True
+56,Track_56,16,Hip Hop,266,False
+57,Track_57,17,Pop,233,True
+58,Track_58,18,Indie,158,False
+59,Track_59,19,Indie,277,True
+60,Track_60,20,Classical,209,True
+61,Track_61,1,Electronic,254,False
+62,Track_62,2,Reggaeton,271,False
+63,Track_63,3,Classical,190,True
+64,Track_64,4,Reggaeton,150,True
+65,Track_65,5,Reggaeton,205,False
+66,Track_66,6,Hip Hop,153,True
+67,Track_67,7,Pop,167,False
+68,Track_68,8,Electronic,179,True
+69,Track_69,9,Rock,176,True
+70,Track_70,10,Rock,202,False
+71,Track_71,11,Reggaeton,281,False
+72,Track_72,12,Reggaeton,269,True
+73,Track_73,13,Rock,276,False
+74,Track_74,14,Pop,198,False
+75,Track_75,15,Hip Hop,204,False
+76,Track_76,16,Pop,155,False
+77,Track_77,17,Classical,275,False
+78,Track_78,18,Classical,190,False
+79,Track_79,19,Classical,260,False
+80,Track_80,20,Pop,156,True
+81,Track_81,1,Reggaeton,191,False
+82,Track_82,2,Reggaeton,219,False
+83,Track_83,3,Electronic,222,False
+84,Track_84,4,Pop,150,False
+85,Track_85,5,Electronic,253,False
+86,Track_86,6,Classical,256,True
+87,Track_87,7,Classical,234,False
+88,Track_88,8,Hip Hop,192,False
+89,Track_89,9,Indie,240,False
+90,Track_90,10,Indie,224,True
+91,Track_91,11,Electronic,252,False
+92,Track_92,12,Indie,279,False
+93,Track_93,13,Reggaeton,219,False
+94,Track_94,14,Classical,159,True
+95,Track_95,15,Hip Hop,197,False
+96,Track_96,16,Electronic,222,True
+97,Track_97,17,Hip Hop,227,True
+98,Track_98,18,Rock,162,False
+99,Track_99,19,Indie,203,False
+100,Track_100,20,Indie,290,True

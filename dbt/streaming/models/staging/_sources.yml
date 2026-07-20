@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: raw
+    database: "{{ env_var('DBT_DATABASE', 'my-project') }}"
+    schema: streaming
+    tables:
+      - name: F_Streams
+      - name: D_Tracks
+      - name: D_Platform
+      - name: D_Time

@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  data-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate a small dataset (deterministic)
+        run: python scripts/generate_datasets.py --out /tmp/ci_data --users 3000 --seed 42
+
+      - name: Run data-quality checks
+        run: python scripts/validate_data.py --dir /tmp/ci_data
+
+  lint-sql:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install sqlfluff
+        run: pip install sqlfluff
+      - name: Lint SQL (informational)
+        run: sqlfluff lint sql/ --dialect bigquery
+        continue-on-error: true

@@ -70,7 +70,7 @@ def build_streams(n_users: int, tracks: pd.DataFrame, time_dim: pd.DataFrame,
                   rng: np.random.Generator) -> pd.DataFrame:
     # Daily volume shaped by seasonality and weekend lift
     days = pd.to_datetime(time_dim["time_key"])
-    day_weight = days.dt.month.map(MONTH_MULTIPLIER).to_numpy()
+    day_weight = days.dt.month.map(MONTH_MULTIPLIER).to_numpy(dtype=float, copy=True)
     day_weight *= np.where(days.dt.dayofweek >= 5, WEEKEND_LIFT, 1.0)
     day_weight /= day_weight.sum()
 

@@ -89,9 +89,10 @@ music-streaming-analytics/
 ├── dbt/
 │   └── streaming/                # staging + marts models with data-quality tests
 ├── dashboard/
-│   └── Music_Stream_Dashboard.pbix
+│   └── Music_Stream_Dashboard.pbix   # 4 report pages — see docs/dashboard.md
 └── docs/
     ├── business_questions.md
+    ├── dashboard.md              # what's on each Power BI page
     └── screenshots/
 ```
 

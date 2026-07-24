@@ -7,61 +7,70 @@
 
 -- ---------------------------------------------------------------------
 -- Q1. DISCOVERY EFFICIENCY
--- Is the recommender serving music users actually want, or padding
--- volume with content they skip? Skip rate broken down by source.
--- Expectation: algorithmic skip rate >> user-driven sources.
+-- Is the recommender serving music users want, or padding volume with
+-- content they skip? Expectation: algorithmic skip rate >> user-driven.
 -- ---------------------------------------------------------------------
 SELECT
   stream_source,
-  COUNT(*)                                             AS streams,
-  ROUND(AVG(CAST(is_skipped AS INT64)) * 100, 1)       AS skip_rate_pct,
-  ROUND(AVG(CAST(is_liked  AS INT64)) * 100, 2)        AS like_rate_pct
+  COUNT(*)                                       AS streams,
+  ROUND(AVG(CAST(is_skipped AS INT64)) * 100, 1) AS skip_rate_pct,
+  ROUND(AVG(CAST(is_liked  AS INT64)) * 100, 2)  AS like_rate_pct
 FROM `streaming.fct_streams`
 GROUP BY stream_source
 ORDER BY skip_rate_pct DESC;
 
 
 -- ---------------------------------------------------------------------
--- Q2. CONTENT QUALITY vs VOLUME
--- Which genres drive engaged listening (low skip, high completion)
--- versus genres that generate streams but get skipped?
+-- Q2. WHERE DO SKIPS HAPPEN — by device
+-- Mobile vs desktop/speaker. Informs where to invest in UX / recommender.
 -- ---------------------------------------------------------------------
 SELECT
-  t.main_genre,
-  COUNT(*)                                                       AS streams,
-  ROUND(AVG(CAST(s.is_skipped AS INT64)) * 100, 1)              AS skip_rate_pct,
-  ROUND(AVG(s.listen_duration_sec / t.total_duration_sec)*100,1) AS avg_completion_pct
-FROM `streaming.fct_streams` s
-JOIN `streaming.dim_track`   t USING (track_id)
-GROUP BY t.main_genre
-ORDER BY streams DESC;
+  device_type,
+  COUNT(*)                                       AS streams,
+  ROUND(AVG(CAST(is_skipped AS INT64)) * 100, 1) AS skip_rate_pct
+FROM `streaming.fct_streams`
+GROUP BY device_type
+ORDER BY skip_rate_pct DESC;
 
 
 -- ---------------------------------------------------------------------
--- Q3. FRONTLINE vs CATALOG
--- Is growth driven by new releases (frontline) or the back catalog?
--- Different margin/marketing strategies depend on the answer.
+-- Q3. MONETIZATION — revenue & RPM by subscription plan
+-- Which plans drive revenue, and what is revenue per 1k active users?
 -- ---------------------------------------------------------------------
 SELECT
-  CASE WHEN t.is_frontline THEN 'Frontline (new)' ELSE 'Catalog' END AS release_type,
-  COUNT(*)                                                            AS streams,
-  ROUND(COUNT(*) / SUM(COUNT(*)) OVER () * 100, 1)                    AS share_pct,
-  ROUND(AVG(CAST(s.is_skipped AS INT64)) * 100, 1)                   AS skip_rate_pct
+  u.subscription_plan,
+  COUNT(DISTINCT s.user_id)                                    AS active_users,
+  COUNT(*)                                                     AS streams,
+  ROUND(SUM(s.revenue_generated), 2)                           AS revenue,
+  ROUND(SUM(s.revenue_generated) / COUNT(DISTINCT s.user_id) * 1000, 2) AS rpm
 FROM `streaming.fct_streams` s
-JOIN `streaming.dim_track`   t USING (track_id)
-GROUP BY release_type
-ORDER BY streams DESC;
+JOIN `streaming.dim_user`    u USING (user_id)
+GROUP BY u.subscription_plan
+ORDER BY revenue DESC;
 
 
 -- ---------------------------------------------------------------------
--- Q4. SEASONALITY
--- Monthly volume with weekend lift — capacity & content planning.
+-- Q4. RETENTION / CHURN (done right)
+-- The dashboard KPI conflates reach with retention. Real retention uses
+-- churn_date: share of users still active at year end.
+-- ---------------------------------------------------------------------
+SELECT
+  COUNT(*)                                                              AS signed_up,
+  COUNTIF(churn_date IS NULL OR churn_date > DATE '2024-12-31')         AS retained_year_end,
+  ROUND(COUNTIF(churn_date IS NULL OR churn_date > DATE '2024-12-31')
+        / COUNT(*) * 100, 1)                                            AS retention_pct,
+  ROUND(COUNTIF(churn_date <= DATE '2024-12-31') / COUNT(*) * 100, 1)   AS churn_pct
+FROM `streaming.dim_user`;
+
+
+-- ---------------------------------------------------------------------
+-- Q5. SEASONALITY — monthly volume with weekend lift
 -- ---------------------------------------------------------------------
 SELECT
   d.month,
-  COUNTIF(NOT d.is_weekend)                            AS weekday_streams,
-  COUNTIF(d.is_weekend)                                AS weekend_streams,
-  COUNT(*)                                             AS total_streams
+  COUNTIF(NOT d.is_weekend) AS weekday_streams,
+  COUNTIF(d.is_weekend)     AS weekend_streams,
+  COUNT(*)                  AS total_streams
 FROM `streaming.fct_streams` s
 JOIN `streaming.dim_time`    d ON s.listen_date = d.time_key
 GROUP BY d.month
@@ -69,44 +78,21 @@ ORDER BY d.month;
 
 
 -- ---------------------------------------------------------------------
--- Q5. VIRAL BREAKOUT DETECTION
--- Flag tracks whose monthly streams spike far above their own baseline.
--- Uses a window function to compare each month to the track's median.
+-- Q6. CONTENT QUALITY by genre — completion vs volume
 -- ---------------------------------------------------------------------
-WITH monthly AS (
-  SELECT
-    s.track_id,
-    d.month,
-    COUNT(*) AS streams
-  FROM `streaming.fct_streams` s
-  JOIN `streaming.dim_time`    d ON s.listen_date = d.time_key
-  GROUP BY s.track_id, d.month
-),
-baseline AS (
-  SELECT
-    track_id,
-    month,
-    streams,
-    AVG(streams) OVER (PARTITION BY track_id) AS avg_monthly_streams
-  FROM monthly
-)
 SELECT
-  b.track_id,
-  t.track_title,
-  b.month,
-  b.streams,
-  ROUND(b.streams / b.avg_monthly_streams, 1) AS spike_ratio
-FROM baseline b
-JOIN `streaming.dim_track` t USING (track_id)
-WHERE b.streams / b.avg_monthly_streams >= 3      -- 3x its own baseline = breakout
-ORDER BY spike_ratio DESC
-LIMIT 20;
+  t.main_genre,
+  COUNT(*)                                                        AS streams,
+  ROUND(AVG(CAST(s.is_skipped AS INT64)) * 100, 1)               AS skip_rate_pct,
+  ROUND(AVG(s.listen_duration_sec / t.total_duration_sec) * 100, 1) AS avg_completion_pct
+FROM `streaming.fct_streams` s
+JOIN `streaming.dim_track`   t USING (track_id)
+GROUP BY t.main_genre
+ORDER BY streams DESC;
 
 
 -- ---------------------------------------------------------------------
--- Q6. CIRCADIAN LISTENING
--- When do people listen? Peak hours drive push-notification timing
--- and editorial playlist scheduling.
+-- Q7. CIRCADIAN LISTENING — peak hours for push/editorial timing
 -- ---------------------------------------------------------------------
 SELECT
   listen_hour,
@@ -115,17 +101,3 @@ SELECT
 FROM `streaming.fct_streams`
 GROUP BY listen_hour
 ORDER BY listen_hour;
-
-
--- ---------------------------------------------------------------------
--- Q7. SUBSCRIBER vs FREE behaviour
--- Do paying users behave differently? Informs conversion strategy.
--- ---------------------------------------------------------------------
-SELECT
-  is_subscriber,
-  COUNT(DISTINCT user_id)                         AS users,
-  COUNT(*)                                        AS streams,
-  ROUND(COUNT(*) / COUNT(DISTINCT user_id), 1)    AS streams_per_user,
-  ROUND(AVG(CAST(is_skipped AS INT64)) * 100, 1)  AS skip_rate_pct
-FROM `streaming.fct_streams`
-GROUP BY is_subscriber;

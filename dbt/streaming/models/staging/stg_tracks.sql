@@ -7,6 +7,10 @@ select
     track_title,
     artist_id,
     main_genre,
-    total_duration_sec,
-    cast(is_frontline as bool) as is_frontline
+    cast(release_date as date) as release_date,
+    bpm,
+    energy,
+    valence,
+    danceability,
+    total_duration_sec
 from source

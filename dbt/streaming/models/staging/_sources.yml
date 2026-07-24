@@ -6,6 +6,7 @@ sources:
     schema: streaming
     tables:
       - name: F_Streams
+      - name: D_Users
       - name: D_Tracks
       - name: D_Platform
       - name: D_Time

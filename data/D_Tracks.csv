@@ -1,101 +1,101 @@
-track_id,track_title,artist_id,main_genre,total_duration_sec,is_frontline
-1,Track_1,1,Hip Hop,222,True
-2,Track_2,2,Rock,184,False
-3,Track_3,3,Reggaeton,152,False
-4,Track_4,4,Pop,258,True
-5,Track_5,5,Reggaeton,271,True
-6,Track_6,6,Hip Hop,293,False
-7,Track_7,7,Hip Hop,268,False
-8,Track_8,8,Pop,157,False
-9,Track_9,9,Reggaeton,167,True
-10,Track_10,10,Indie,282,True
-11,Track_11,11,Classical,208,False
-12,Track_12,12,Reggaeton,271,False
-13,Track_13,13,Indie,183,True
-14,Track_14,14,Rock,243,True
-15,Track_15,15,Indie,270,False
-16,Track_16,16,Classical,255,False
-17,Track_17,17,Hip Hop,260,True
-18,Track_18,18,Reggaeton,238,False
-19,Track_19,19,Hip Hop,248,False
-20,Track_20,20,Classical,235,False
-21,Track_21,1,Electronic,215,False
-22,Track_22,2,Classical,283,False
-23,Track_23,3,Hip Hop,282,False
-24,Track_24,4,Rock,277,False
-25,Track_25,5,Indie,285,False
-26,Track_26,6,Electronic,298,False
-27,Track_27,7,Reggaeton,254,True
-28,Track_28,8,Hip Hop,256,False
-29,Track_29,9,Indie,151,False
-30,Track_30,10,Indie,171,True
-31,Track_31,11,Indie,167,False
-32,Track_32,12,Classical,206,False
-33,Track_33,13,Hip Hop,261,True
-34,Track_34,14,Indie,174,False
-35,Track_35,15,Electronic,172,False
-36,Track_36,16,Rock,193,False
-37,Track_37,17,Rock,252,True
-38,Track_38,18,Electronic,196,False
-39,Track_39,19,Indie,296,False
-40,Track_40,20,Hip Hop,294,True
-41,Track_41,1,Electronic,272,True
-42,Track_42,2,Indie,162,False
-43,Track_43,3,Reggaeton,254,False
-44,Track_44,4,Classical,179,True
-45,Track_45,5,Pop,221,False
-46,Track_46,6,Indie,213,False
-47,Track_47,7,Pop,209,False
-48,Track_48,8,Hip Hop,225,False
-49,Track_49,9,Pop,152,True
-50,Track_50,10,Electronic,277,False
-51,Track_51,11,Rock,238,False
-52,Track_52,12,Rock,278,True
-53,Track_53,13,Rock,204,True
-54,Track_54,14,Rock,274,False
-55,Track_55,15,Hip Hop,199,True
-56,Track_56,16,Hip Hop,266,False
-57,Track_57,17,Pop,233,True
-58,Track_58,18,Indie,158,False
-59,Track_59,19,Indie,277,True
-60,Track_60,20,Classical,209,True
-61,Track_61,1,Electronic,254,False
-62,Track_62,2,Reggaeton,271,False
-63,Track_63,3,Classical,190,True
-64,Track_64,4,Reggaeton,150,True
-65,Track_65,5,Reggaeton,205,False
-66,Track_66,6,Hip Hop,153,True
-67,Track_67,7,Pop,167,False
-68,Track_68,8,Electronic,179,True
-69,Track_69,9,Rock,176,True
-70,Track_70,10,Rock,202,False
-71,Track_71,11,Reggaeton,281,False
-72,Track_72,12,Reggaeton,269,True
-73,Track_73,13,Rock,276,False
-74,Track_74,14,Pop,198,False
-75,Track_75,15,Hip Hop,204,False
-76,Track_76,16,Pop,155,False
-77,Track_77,17,Classical,275,False
-78,Track_78,18,Classical,190,False
-79,Track_79,19,Classical,260,False
-80,Track_80,20,Pop,156,True
-81,Track_81,1,Reggaeton,191,False
-82,Track_82,2,Reggaeton,219,False
-83,Track_83,3,Electronic,222,False
-84,Track_84,4,Pop,150,False
-85,Track_85,5,Electronic,253,False
-86,Track_86,6,Classical,256,True
-87,Track_87,7,Classical,234,False
-88,Track_88,8,Hip Hop,192,False
-89,Track_89,9,Indie,240,False
-90,Track_90,10,Indie,224,True
-91,Track_91,11,Electronic,252,False
-92,Track_92,12,Indie,279,False
-93,Track_93,13,Reggaeton,219,False
-94,Track_94,14,Classical,159,True
-95,Track_95,15,Hip Hop,197,False
-96,Track_96,16,Electronic,222,True
-97,Track_97,17,Hip Hop,227,True
-98,Track_98,18,Rock,162,False
-99,Track_99,19,Indie,203,False
-100,Track_100,20,Indie,290,True
+track_id,track_title,artist_id,main_genre,release_date,bpm,energy,valence,danceability,total_duration_sec
+1,Track_1,2,Indie,2024-03-09,92,0.58,0.38,0.76,249
+2,Track_2,3,Pop,2024-07-04,83,0.88,0.29,0.45,154
+3,Track_3,4,Indie,2023-11-09,103,0.77,0.11,0.43,235
+4,Track_4,5,Pop,2023-09-24,78,0.45,0.38,0.4,303
+5,Track_5,6,Rock,2024-06-24,91,0.33,0.44,0.72,223
+6,Track_6,7,Indie,2023-02-10,79,0.95,0.17,0.41,174
+7,Track_7,8,Hip Hop,2024-01-19,99,0.72,0.39,0.46,169
+8,Track_8,9,Reggaeton,2024-07-05,87,0.7,0.28,0.67,290
+9,Track_9,10,Indie,2024-09-23,110,0.92,0.86,0.79,279
+10,Track_10,11,Electronic,2024-02-13,122,0.3,0.65,0.42,272
+11,Track_11,12,Indie,2024-09-20,138,0.59,0.18,0.71,180
+12,Track_12,13,Classical,2022-09-03,145,0.85,0.76,0.74,317
+13,Track_13,14,Electronic,2023-03-26,129,0.89,0.16,0.59,287
+14,Track_14,15,Pop,2024-03-08,101,0.39,0.55,0.47,213
+15,Track_15,16,Classical,2024-09-11,105,0.89,0.72,0.49,305
+16,Track_16,17,Rock,2024-03-28,153,0.67,0.64,0.63,281
+17,Track_17,18,Electronic,2023-03-19,142,0.5,0.87,0.63,241
+18,Track_18,19,Reggaeton,2023-12-21,136,0.94,0.7,0.66,202
+19,Track_19,20,Pop,2023-02-19,66,0.48,0.58,0.81,198
+20,Track_20,21,Indie,2024-01-30,141,0.35,0.46,0.79,285
+21,Track_21,22,Reggaeton,2023-06-07,104,0.72,0.84,0.59,253
+22,Track_22,23,Hip Hop,2024-09-12,164,0.47,0.76,0.85,251
+23,Track_23,24,Electronic,2024-07-25,76,0.8,0.12,0.65,250
+24,Track_24,25,Hip Hop,2024-02-02,153,0.56,0.28,0.5,213
+25,Track_25,1,Pop,2024-01-14,80,0.75,0.43,0.56,248
+26,Track_26,2,Indie,2022-09-11,111,0.32,0.23,0.45,247
+27,Track_27,3,Electronic,2023-06-08,135,0.78,0.88,0.71,183
+28,Track_28,4,Electronic,2023-06-04,145,0.51,0.58,0.54,283
+29,Track_29,5,Electronic,2023-11-28,110,0.67,0.83,0.42,312
+30,Track_30,6,Classical,2024-02-21,72,0.81,0.83,0.63,159
+31,Track_31,7,Electronic,2023-07-23,127,0.34,0.53,0.65,148
+32,Track_32,8,Indie,2023-02-08,126,0.94,0.79,0.52,207
+33,Track_33,9,Pop,2023-04-23,128,0.37,0.16,0.7,168
+34,Track_34,10,Hip Hop,2022-11-01,155,0.58,0.59,0.61,280
+35,Track_35,11,Electronic,2024-04-12,76,0.6,0.39,0.6,182
+36,Track_36,12,Rock,2023-10-17,109,0.57,0.48,0.83,177
+37,Track_37,13,Electronic,2023-07-23,81,0.92,0.18,0.86,256
+38,Track_38,14,Hip Hop,2023-05-02,68,0.85,0.48,0.41,194
+39,Track_39,15,Indie,2022-11-05,106,0.46,0.66,0.64,265
+40,Track_40,16,Electronic,2024-01-01,153,0.38,0.57,0.62,284
+41,Track_41,17,Classical,2023-05-06,117,0.66,0.8,0.46,298
+42,Track_42,18,Rock,2023-02-22,151,0.31,0.56,0.8,296
+43,Track_43,19,Pop,2024-05-07,126,0.44,0.4,0.49,251
+44,Track_44,20,Electronic,2023-10-27,73,0.84,0.1,0.57,313
+45,Track_45,21,Rock,2024-04-24,98,0.46,0.86,0.57,207
+46,Track_46,22,Hip Hop,2022-11-11,121,0.62,0.75,0.55,214
+47,Track_47,23,Classical,2024-09-20,87,0.82,0.64,0.58,217
+48,Track_48,24,Hip Hop,2023-06-10,108,0.76,0.26,0.88,300
+49,Track_49,25,Rock,2022-12-30,157,0.6,0.27,0.58,155
+50,Track_50,1,Pop,2023-12-10,78,0.61,0.83,0.49,147
+51,Track_51,2,Hip Hop,2023-07-19,140,0.66,0.26,0.41,292
+52,Track_52,3,Classical,2023-03-04,112,0.51,0.21,0.81,211
+53,Track_53,4,Classical,2024-01-12,94,0.37,0.4,0.54,252
+54,Track_54,5,Indie,2023-07-19,120,0.91,0.84,0.4,313
+55,Track_55,6,Electronic,2023-02-02,169,0.44,0.36,0.84,313
+56,Track_56,7,Reggaeton,2023-03-15,121,0.73,0.35,0.75,234
+57,Track_57,8,Electronic,2022-11-16,66,0.5,0.48,0.67,183
+58,Track_58,9,Hip Hop,2022-10-12,68,0.79,0.17,0.52,267
+59,Track_59,10,Electronic,2024-10-09,131,0.61,0.53,0.51,155
+60,Track_60,11,Classical,2023-02-05,104,0.39,0.76,0.42,210
+61,Track_61,12,Indie,2024-08-11,148,0.6,0.49,0.57,178
+62,Track_62,13,Reggaeton,2023-04-11,88,0.64,0.62,0.7,313
+63,Track_63,14,Reggaeton,2023-05-03,160,0.74,0.2,0.51,220
+64,Track_64,15,Classical,2024-08-30,98,0.71,0.44,0.46,207
+65,Track_65,16,Rock,2024-07-17,140,0.93,0.65,0.64,293
+66,Track_66,17,Hip Hop,2024-09-06,142,0.81,0.45,0.47,157
+67,Track_67,18,Hip Hop,2024-05-10,140,0.4,0.84,0.67,284
+68,Track_68,19,Hip Hop,2023-09-28,70,0.57,0.84,0.4,173
+69,Track_69,20,Electronic,2022-12-20,84,0.5,0.38,0.72,142
+70,Track_70,21,Pop,2024-03-31,161,0.86,0.88,0.45,277
+71,Track_71,22,Indie,2023-05-16,79,0.71,0.38,0.63,179
+72,Track_72,23,Rock,2023-01-04,161,0.82,0.15,0.79,148
+73,Track_73,24,Hip Hop,2023-06-06,153,0.37,0.11,0.7,296
+74,Track_74,25,Classical,2023-10-03,150,0.85,0.45,0.54,177
+75,Track_75,1,Rock,2023-01-14,114,0.5,0.64,0.57,224
+76,Track_76,2,Rock,2023-08-02,132,0.4,0.47,0.48,204
+77,Track_77,3,Reggaeton,2023-11-04,149,0.35,0.52,0.85,215
+78,Track_78,4,Pop,2024-03-15,85,0.86,0.14,0.85,211
+79,Track_79,5,Classical,2023-03-25,155,0.77,0.17,0.62,193
+80,Track_80,6,Electronic,2024-01-10,106,0.62,0.13,0.44,309
+81,Track_81,7,Indie,2022-09-16,120,0.77,0.85,0.53,286
+82,Track_82,8,Reggaeton,2023-11-17,135,0.82,0.25,0.4,151
+83,Track_83,9,Reggaeton,2023-05-03,124,0.91,0.48,0.46,267
+84,Track_84,10,Reggaeton,2023-01-24,160,0.64,0.22,0.86,169
+85,Track_85,11,Hip Hop,2024-03-10,73,0.67,0.79,0.75,291
+86,Track_86,12,Pop,2024-08-20,161,0.8,0.12,0.77,259
+87,Track_87,13,Pop,2023-11-28,113,0.41,0.81,0.84,220
+88,Track_88,14,Rock,2023-02-10,91,0.53,0.71,0.44,159
+89,Track_89,15,Classical,2023-10-02,120,0.86,0.87,0.7,307
+90,Track_90,16,Electronic,2023-01-30,73,0.62,0.12,0.73,251
+91,Track_91,17,Classical,2024-03-14,159,0.51,0.5,0.72,223
+92,Track_92,18,Reggaeton,2024-06-29,149,0.36,0.52,0.52,179
+93,Track_93,19,Electronic,2024-08-07,142,0.39,0.46,0.72,274
+94,Track_94,20,Rock,2024-05-16,92,0.87,0.52,0.62,297
+95,Track_95,21,Electronic,2024-07-27,175,0.47,0.69,0.63,192
+96,Track_96,22,Pop,2023-06-24,99,0.76,0.59,0.77,148
+97,Track_97,23,Classical,2023-03-10,95,0.47,0.31,0.63,242
+98,Track_98,24,Hip Hop,2024-04-20,100,0.73,0.32,0.74,248
+99,Track_99,25,Pop,2022-09-27,124,0.83,0.7,0.83,218
+100,Track_100,1,Reggaeton,2024-08-01,100,0.47,0.62,0.76,267

@@ -1,5 +1,4 @@
--- Product-metric mart: discovery efficiency by source.
--- One row per stream_source with the KPIs a product team reviews weekly.
+-- Product-metric mart: discovery efficiency by source (one row per source).
 with streams as (
     select * from {{ ref('fct_streams') }}
 )

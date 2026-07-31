@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS streaming.fct_streams (
   track_id            INT64   NOT NULL,   -- FK -> dim_track
   platform_id         INT64   NOT NULL,   -- FK -> dim_platform
   listen_date         DATE    NOT NULL,   -- FK -> dim_time.time_key
-  listen_hour         INT64,              -- 0-23, circadian analysis
+  listen_hour         INT64,              -- 0-23
   device_type         STRING,             -- Mobile iOS | Mobile Android | Tablet | Desktop | Smart Speaker
   connection_type     STRING,             -- Wifi | Cellular | Offline
   stream_source       STRING,             -- Algorithmic | Editorial | Search

@@ -129,7 +129,7 @@ push and runs the data-quality checks, plus a SQL lint (`sqlfluff`, BigQuery dia
 
 ## 🎯 Why this project
 
-I built the data generator to reflect **real streaming-industry dynamics** — circadian listening, weekend and summer lift, algorithmic-vs-editorial discovery, a mobile skip lift, subscription tiers and ~18% churn — so the analysis exercises the same problems a product-analytics team faces. The goal was a portfolio piece that proves I can go from **raw event data → dimensional model → product metrics → decision-ready dashboard**, not just plot a CSV.
+I built the data generator to reflect **real streaming-industry dynamics** — seasonality (summer & December lift), weekend lift, algorithmic-vs-editorial discovery, a mobile skip lift, subscription tiers and ~18% churn — so the analysis exercises the same problems a product-analytics team faces. The goal was a portfolio piece that proves I can go from **raw event data → dimensional model → product metrics → decision-ready dashboard**, not just plot a CSV.
 
 **Author:** Matteo Balducci — Data Analyst
 [LinkedIn](https://www.linkedin.com/in/matteo-balducci/) · [GitHub](https://github.com/matteobalducci)

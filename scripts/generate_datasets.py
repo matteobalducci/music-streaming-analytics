@@ -3,7 +3,7 @@ Reproducible generator for the music-streaming star schema.
 
 Produces the same 5-table shape as the analysed dataset — a fact table plus
 four dimensions (users, tracks, platform, time) — calibrated to realistic
-streaming dynamics: circadian listening, weekend and summer lift, an
+streaming dynamics: seasonality (summer & December lift), weekend lift, an
 algorithmic-vs-editorial skip gap, a mobile skip lift, and ~18% user churn.
 
 Output: F_Streams.csv, D_Users.csv, D_Tracks.csv, D_Platform.csv, D_Time.csv
@@ -40,8 +40,9 @@ STREAMS_PER_USER = 27
 MONTH_MULT = {1: .85, 2: .82, 3: .9, 4: .95, 5: 1.0, 6: 1.15,
               7: 1.25, 8: 1.2, 9: .95, 10: .95, 11: .95, 12: 1.1}  # summer + Dec lift
 WEEKEND_LIFT = 1.25
-# Evening/night-weighted listening hours
-HOUR_W = np.array([2, 1, 1, 1, 1, 2, 4, 6, 7, 6, 6, 7, 8, 7, 6, 6, 7, 9, 11, 12, 11, 9, 6, 4], dtype=float)
+# Listening hour is close to uniform in the analysed dataset (no circadian dip) —
+# match that rather than inventing a pattern the real data doesn't show.
+HOUR_W = np.ones(24)
 
 
 def build_platform():

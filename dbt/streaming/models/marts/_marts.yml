@@ -25,3 +25,29 @@ models:
         tests: [not_null, unique]
       - name: skip_rate_pct
         tests: [not_null]
+
+  - name: mart_streaming_flat
+    description: >
+      Denormalized, stream-grain mart (one row per listening event, every
+      dimension attribute flattened in) for BI tools that don't model stars
+      natively — this is what Looker Studio connects to.
+    columns:
+      - name: user_id
+        tests: [not_null]
+      - name: track_id
+        tests: [not_null]
+      - name: stream_source
+        tests:
+          - accepted_values: { values: ['Algorithmic', 'Editorial', 'Search'] }
+
+  - name: mart_user_retention
+    description: >
+      User-grain mart (one row per user) for retention, active-user, and
+      monetization metrics. Deliberately separate from mart_streaming_flat
+      to avoid mixing grains — retention is a user-level fact.
+    columns:
+      - name: user_id
+        tests: [not_null, unique]
+      - name: subscription_plan
+        tests:
+          - accepted_values: { values: ['Free', 'Premium Individual', 'Premium Student', 'Premium Family'] }

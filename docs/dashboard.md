@@ -7,37 +7,40 @@ favour of an explicit `D_Time` calendar, so month ordering and time hierarchies
 are controlled via Sort-by-Column.
 
 > **Data files:** this repo ships all four dimensions (`D_Users`, `D_Tracks`,
-> `D_Platform`, `D_Time`) plus a 100k-row sample of the fact table. The numbers
-> in the dashboard have been verified against this data — see the note below.
+> `D_Platform`, `D_Time`) plus a 100k-row real sample of the fact table. The
+> **full fact table** (1.23M rows, 97 MB) is published as a
+> [GitHub Release asset](../../releases) rather than committed to git history.
 
-## Pages
+## Pages (4)
 
-| # | Page | Status | Contents |
-|---|---|---|---|
-| 1 | **Growth & Monetization** | ✅ | 3 KPI cards, `Monthly Active Users Growth` (line), `Premium vs Free Mix` (donut), `Retention Rate Trend` (bar), slicer |
-| 2 | **Deep Dive & Engagement** | ✅ | `Skip Rate %` (bar), `Like Rate %` (scatter), `Main Genre` (treemap), `Total Streams` (area), map, Country + Genre slicers |
-| 3 | **Machine Learning Insights** | ✅ | `Key Influencers` and `Decomposition Tree` — Power BI's built-in ML visuals for driver analysis and executive drill-down |
-| 4 | **Forecast & Financials** | ⬜ **empty** | Planned: revenue forecast and financial KPIs |
-
-Four additional *Appunti* pages hold study notes (star schema rationale, DAX
-formulas, interview talking points). They are working notes, not part of the
-report — consider hiding them before sharing the dashboard publicly.
+| # | Page | Contents |
+|---|---|---|
+| 1 | **Growth & Monetization** | 3 KPI cards (Total Active Users, RPM, **Retention Rate %**), `Monthly Active Users Growth` (line), `Premium vs Free Mix` (donut), `Retention Rate Trend` (line, churn-based) |
+| 2 | **Deep Dive & Engagement** | `Streams by Hour of Day` (area, zero-based axis), `Skip Rate %` by device, `Like Rate %` (scatter), `Main Genre` (treemap), map, Country + Genre slicers |
+| 3 | **Forecast & Financials** | 3 KPI cards (Total Revenue, RPM, Gross Margin %), `Total Revenue by Year and Quarter` with native Power BI forecast (short horizon, ~2 quarters ahead — appropriate given only 4 quarters of history), revenue by subscription plan, revenue by country (map) |
+| 4 | **Machine Learning Insights** | `Key Influencers` (explains `is_skipped`, includes `stream_source`) and `Decomposition Tree` — Power BI's built-in ML visuals for driver analysis and executive drill-down |
 
 ## Key measures (DAX)
 
 | Measure | Definition | Why it matters |
 |---|---|---|
 | **Total Active Users** | `DISTINCTCOUNT(F_Streams[user_id])` | Counts users who actually streamed, not sign-ups — a stickiness signal |
-| **RPM** (revenue per 1k users) | `SUM(Revenue) / Total Active Users * 1000` | Monetization efficiency; rising users with flat RPM means low-value acquisition |
-| **Retention Rate** | `Retained Users / Signed-Up Users`, where retained = `churn_date` after period end | Real retention (~82%, i.e. 18% churn) — *not* the "% who ever listened" a naïve `active / signed-up` reports |
+| **RPM** (revenue per 1k users) | `SUM(revenue_generated) / Total Active Users * 1000` | Monetization efficiency; rising users with flat RPM means low-value acquisition |
+| **Retention Rate %** | `Retained Users / DISTINCTCOUNT(D_Users[user_id])`, where retained = `churn_date` blank or after period end | Real, churn-based retention (~82% at year end) — *not* the "% who ever listened" a naïve `active / signed-up` reports |
+| **Total Revenue / Gross Margin %** | `SUM(revenue_generated)`, `(Revenue − Royalty Cost) / Revenue` | Financial view backing the Forecast page |
 
-> **Data-verified.** Dashboard KPIs were checked against the source data: Total Streams
-> (1,227,355), RPM ($149.19), subscription mix and the decomposition-tree splits all match
-> exactly. The one measure corrected here is retention (originally reach, now churn-based).
+## Data-verified
 
-## To finish
+Every KPI on the dashboard has been checked against the source data and matches exactly:
+Total Active Users (43,803 ≈ 44K), Total Streams (1,227,355), RPM ($149.19), Retention Rate
+(82.28% at year end, 92.27% in April), skip rate by device (33%/33%/28%/28%/28%), revenue
+by subscription plan, and the Key Influencers `stream_source is Algorithmic → 1.91x` finding
+(cross-validated independently by the [skip-prediction model](../../streaming-insights-copilot)
+in the companion Copilot project, which finds `stream_source` the dominant predictor via
+permutation importance).
 
-- [ ] Build the **Forecast & Financials** page (revenue forecast + financial KPIs)
-- [ ] Add `stream_source` to the **Key Influencers** "Explain by" field (the dominant skip driver)
-- [ ] Hide or remove the *Appunti* note pages in the published version
-- [ ] Publish to Power BI Service / Tableau Public and link the URL here
+## Known limitation
+
+Listening hour is close to uniform in this dataset (no circadian dip) — the "Streams by
+Hour of Day" chart is correctly close to flat. Real temporal patterns in this data are
+seasonality (summer/December lift) and a weekend lift, both visible elsewhere in the report.

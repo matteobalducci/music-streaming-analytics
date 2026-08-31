@@ -118,6 +118,11 @@ make load PROJECT=your-gcp-project          # Python loader (scripts/load_bigque
 cd dbt/streaming && dbt deps && dbt build    # build + test the models
 ```
 
+> Setting up on a fresh, no-billing GCP project? See
+> [`docs/gcp_setup_notes.md`](docs/gcp_setup_notes.md) — a date-partitioned load
+> silently writes zero rows without billing linked, and `pip install` may fall back to
+> a slow source build of `grpcio` on some Intel Mac setups. Both have quick fixes.
+
 The **full, real fact table** (1.23M rows, 97 MB — the exact data behind the Power BI
 dashboard) is published as a [**GitHub Release asset**](../../releases) rather than
 committed to git history, so the repo stays clone-and-run. A 100k-row real sample lives

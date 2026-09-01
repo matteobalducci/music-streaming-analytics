@@ -5,8 +5,13 @@ sources:
     database: "{{ env_var('DBT_DATABASE', 'my-project') }}"
     schema: streaming
     tables:
+      # F_Streams is the raw landing table for the fact — dbt rebuilds and enriches
+      # it into the final `fct_streams` mart (adds completion_ratio, is_engaged_stream),
+      # so raw and final need different names to avoid a self-referential build.
       - name: F_Streams
-      - name: D_Users
-      - name: D_Tracks
-      - name: D_Platform
-      - name: D_Time
+      # The four dimensions are loaded directly under their final star-schema names —
+      # no dbt model rebuilds a table under these names, so no raw/final split needed.
+      - name: dim_user
+      - name: dim_track
+      - name: dim_platform
+      - name: dim_time

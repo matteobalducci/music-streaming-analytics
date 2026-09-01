@@ -1,5 +1,5 @@
 with source as (
-    select * from {{ source('raw', 'D_Tracks') }}
+    select * from {{ source('raw', 'dim_track') }}
 )
 
 select

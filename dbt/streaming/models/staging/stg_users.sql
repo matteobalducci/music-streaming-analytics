@@ -1,5 +1,5 @@
 with source as (
-    select * from {{ source('raw', 'D_Users') }}
+    select * from {{ source('raw', 'dim_user') }}
 )
 
 select

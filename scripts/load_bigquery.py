@@ -1,9 +1,18 @@
 """
-Load the star-schema CSVs into BigQuery.
+Load the CSVs into BigQuery.
 
-Creates the target dataset (if missing) and loads the five tables with explicit
-schemas — partitioning and clustering the fact table the way a production
-warehouse would. Idempotent: each load truncates and rewrites.
+Creates the target dataset (if missing) and loads five tables with explicit schemas —
+partitioning and clustering the fact table the way a production warehouse would.
+Idempotent: each load truncates and rewrites.
+
+The four dimensions load directly under their final star-schema names (dim_user,
+dim_track, dim_platform, dim_time) — nothing downstream rebuilds a table under those
+names, so there's no raw/final split needed for them. The fact table is the exception:
+it loads into a raw landing table (`F_Streams`), because `dbt build` (dbt/streaming)
+reads it and *rebuilds* it as the enriched final `fct_streams` mart (adds
+completion_ratio, is_engaged_stream) — raw and final need different names, or the dbt
+build becomes self-referential. Run `cd dbt/streaming && dbt build` after this script
+to get `fct_streams`; the four dimensions are usable immediately.
 
 Prerequisites:
     pip install google-cloud-bigquery
@@ -23,7 +32,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.normpath(os.path.join(HERE, "..", "data"))
 
 SCHEMAS = {
-    "fct_streams": [
+    "F_Streams": [
         bigquery.SchemaField("user_id", "INT64", mode="REQUIRED"),
         bigquery.SchemaField("track_id", "INT64", mode="REQUIRED"),
         bigquery.SchemaField("platform_id", "INT64", mode="REQUIRED"),
@@ -71,13 +80,13 @@ SCHEMAS = {
     ],
 }
 
-# table -> csv file
+# table -> csv file (F_Streams is the raw landing name; the rest load direct-to-final)
 FILES = {
     "dim_user": "D_Users.csv",
     "dim_track": "D_Tracks.csv",
     "dim_platform": "D_Platform.csv",
     "dim_time": "D_Time.csv",
-    "fct_streams": "F_Streams.csv",
+    "F_Streams": "F_Streams.csv",
 }
 
 
@@ -98,7 +107,7 @@ def load_table(client, dataset, table, path):
         skip_leading_rows=1,
         write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
     )
-    if table == "fct_streams":
+    if table == "F_Streams":
         job_config.time_partitioning = bigquery.TimePartitioning(field="listen_date")
         job_config.clustering_fields = ["track_id", "stream_source"]
     with open(path, "rb") as fh:
@@ -123,10 +132,11 @@ def main():
     print(f"dataset ready: {args.project}.{args.dataset} ({args.location})")
 
     for table, fname in FILES.items():
-        path = resolve_fact_path() if table == "fct_streams" else os.path.join(DATA, fname)
+        path = resolve_fact_path() if table == "F_Streams" else os.path.join(DATA, fname)
         load_table(client, args.dataset, table, path)
 
-    print("\ndone — query it, or run `cd dbt/streaming && dbt build`.")
+    print("\nraw tables loaded — now run `cd dbt/streaming && dbt build` to build the "
+          "star schema (fct_streams, dim_user, dim_track, dim_platform, dim_time).")
 
 
 if __name__ == "__main__":

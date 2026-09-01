@@ -11,10 +11,10 @@ users as (
     select user_id, country, subscription_plan from {{ ref('stg_users') }}
 ),
 platforms as (
-    select platform_id, service_name from {{ source('raw', 'D_Platform') }}
+    select platform_id, service_name from {{ source('raw', 'dim_platform') }}
 ),
 time_dim as (
-    select time_key, year, month, day_of_week, is_weekend from {{ source('raw', 'D_Time') }}
+    select time_key, year, month, day_of_week, is_weekend from {{ source('raw', 'dim_time') }}
 )
 
 select

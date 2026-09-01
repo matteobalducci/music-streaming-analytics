@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-# Load the star schema into BigQuery using the bq CLI. Requires gcloud + auth.
+# Load the CSVs into BigQuery using the bq CLI. Requires gcloud + auth.
+# The four dimensions load direct-to-final (dim_user, dim_track, dim_platform,
+# dim_time) — nothing downstream rebuilds a table under those names. F_Streams is
+# the exception: it's a raw landing table that `dbt build` (dbt/streaming) reads and
+# rebuilds as the enriched final `fct_streams` mart, so raw and final need different
+# names. Run `cd dbt/streaming && dbt build` afterward to get `fct_streams`.
 #   PROJECT=my-gcp-project ./scripts/load_bigquery.sh
 set -euo pipefail
 PROJECT="${PROJECT:?set PROJECT=your-gcp-project}"
@@ -21,6 +26,6 @@ bq load --replace --source_format=CSV --skip_leading_rows=1 "$PROJECT:$DATASET.d
   time_key:DATE,year:INT64,month:INT64,day_of_week:STRING,is_weekend:BOOL
 bq load --replace --source_format=CSV --skip_leading_rows=1 \
   --time_partitioning_field=listen_date --clustering_fields=track_id,stream_source \
-  "$PROJECT:$DATASET.fct_streams" "$FACT" \
+  "$PROJECT:$DATASET.F_Streams" "$FACT" \
   user_id:INT64,track_id:INT64,platform_id:INT64,listen_date:DATE,listen_hour:INT64,device_type:STRING,connection_type:STRING,stream_source:STRING,is_skipped:BOOL,is_liked:BOOL,listen_duration_sec:INT64,royalty_cost:FLOAT64,revenue_generated:FLOAT64
-echo "done."
+echo "dimensions ready, F_Streams (raw) loaded — now run: cd dbt/streaming && dbt build"

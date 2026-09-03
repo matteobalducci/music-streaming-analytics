@@ -34,7 +34,7 @@ This project treats the dataset as the **digital twin of a streaming platform** 
 
 ## 4. Are we keeping users? (Retention — done right)
 
-**Finding:** A naïve `active / signed-up` KPI reads **~96%** — but that is **reach, not retention**. Using `churn_date`, **~18%** of users churn within the year → **real retention ≈ 82%**, and month-over-month retention sits at **90–97%**, lowest in **February** and dipping again in **September** (Q8).
+**Finding:** A naïve `active / signed-up` KPI reads **~96%** — but that is **reach, not retention**. Using `churn_date`, **~18%** of users churn within the year → **real retention ≈ 82%**, and month-over-month retention sits at **89–97%**, lowest in **February** and dipping again in **September** (Q8).
 
 **So what:** The 96% number would hide a real 18% churn in an executive review. The corrected measure (and the DAX for it) is the difference between a metric that *looks* good and one that *drives* decisions. See Q4.
 
@@ -45,7 +45,7 @@ This project treats the dataset as the **digital twin of a streaming platform** 
 **Finding:** Raw monthly volume is **not** a seasonality signal — it is dominated by the growing
 user base. August has roughly three times January's streams mostly because it has twice the active
 users. Dividing by active users per month (Q9), the seasonal pattern appears: **summer +16%**,
-**December +11%**, **February −19%** against the yearly average. Weekend days carry **+26%** more
+**December +11%**, **February −19%** against the yearly average. Weekend days carry **+25%** more
 streams than weekdays (Q10).
 
 **So what:** Infrastructure capacity and editorial calendars should be pre-loaded ahead of these
@@ -73,7 +73,7 @@ and by 5pp across device, and by essentially nothing across genre. Editorial eff
 *A note on the data:* the generator sets skip probability from source and device only, so the
 absence of a genre effect is by construction, not a discovery about music. It is kept here because
 a synthetic dataset should not be read as evidence of something it was never built to contain —
-and `tests/test_headline_metrics.py` now asserts the spread stays inside noise, so the claim cannot
+and `tests/test_business_questions_sql.py` now asserts the spread stays inside noise, so the claim cannot
 quietly turn positive.
 
 ---

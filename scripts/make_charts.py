@@ -63,7 +63,7 @@ def main():
 
     # 3. monthly seasonality
     m = f.groupby("month").size()
-    fig, ax = plt.subplots(figsize=(8, 4))
+    fig, ax = plt.subplots(figsize=(7, 4.5))
     ax.plot(m.index, m.values, marker="o", color=GREEN, linewidth=2.5)
     ax.fill_between(m.index, m.values, alpha=0.1, color=GREEN)
     ax.set_title("Monthly streams — summer & December peaks", fontweight="bold")
@@ -75,7 +75,7 @@ def main():
     mix = active["subscription_plan"].value_counts()
     order = ["Free", "Premium Individual", "Premium Student", "Premium Family"]
     mix = mix.reindex([o for o in order if o in mix.index])
-    fig, ax = plt.subplots(figsize=(5.5, 4.5))
+    fig, ax = plt.subplots(figsize=(7, 4.5))
     ax.pie(mix.values, labels=mix.index, colors=[GREY, GREEN, "#17a34a", "#0e7a37"],
            autopct="%.0f%%", startangle=90, textprops={"fontweight": "bold", "fontsize": 9})
     ax.set_title("Subscription mix — Free vs Premium (active users)", fontweight="bold")

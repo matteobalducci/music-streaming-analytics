@@ -8,6 +8,7 @@ CREATE SCHEMA IF NOT EXISTS streaming;
 
 -- Fact table -----------------------------------------------------------
 CREATE TABLE IF NOT EXISTS streaming.fct_streams (
+  stream_id           INT64   NOT NULL,   -- grain key: one row = one listen
   user_id             INT64   NOT NULL,   -- FK -> dim_user
   track_id            INT64   NOT NULL,   -- FK -> dim_track
   platform_id         INT64   NOT NULL,   -- FK -> dim_platform
@@ -19,8 +20,8 @@ CREATE TABLE IF NOT EXISTS streaming.fct_streams (
   is_skipped          BOOL,
   is_liked            BOOL,
   listen_duration_sec INT64,
-  royalty_cost        FLOAT64,
-  revenue_generated   FLOAT64
+  royalty_cost        NUMERIC,
+  revenue_generated   NUMERIC
 )
 PARTITION BY listen_date
 CLUSTER BY track_id, stream_source;

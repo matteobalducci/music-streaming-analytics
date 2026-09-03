@@ -43,8 +43,8 @@ SELECT
   COUNT(*)                                                     AS streams,
   ROUND(SUM(s.revenue_generated), 2)                           AS revenue,
   ROUND(SUM(s.revenue_generated) / COUNT(DISTINCT s.user_id) * 1000, 2) AS rpm
-FROM `streaming.fct_streams` s
-JOIN `streaming.dim_user`    u USING (user_id)
+FROM `streaming.fct_streams` AS s
+INNER JOIN `streaming.dim_user`    AS u ON s.user_id = u.user_id
 GROUP BY u.subscription_plan
 ORDER BY revenue DESC;
 
@@ -71,8 +71,8 @@ SELECT
   COUNTIF(NOT d.is_weekend) AS weekday_streams,
   COUNTIF(d.is_weekend)     AS weekend_streams,
   COUNT(*)                  AS total_streams
-FROM `streaming.fct_streams` s
-JOIN `streaming.dim_time`    d ON s.listen_date = d.time_key
+FROM `streaming.fct_streams` AS s
+INNER JOIN `streaming.dim_time`    AS d ON s.listen_date = d.time_key
 GROUP BY d.month
 ORDER BY d.month;
 
@@ -84,9 +84,9 @@ SELECT
   t.main_genre,
   COUNT(*)                                                        AS streams,
   ROUND(AVG(CAST(s.is_skipped AS INT64)) * 100, 1)               AS skip_rate_pct,
-  ROUND(AVG(s.listen_duration_sec / t.total_duration_sec) * 100, 1) AS avg_completion_pct
-FROM `streaming.fct_streams` s
-JOIN `streaming.dim_track`   t USING (track_id)
+  ROUND(AVG(SAFE_DIVIDE(s.listen_duration_sec, t.total_duration_sec)) * 100, 1) AS avg_completion_pct
+FROM `streaming.fct_streams` AS s
+INNER JOIN `streaming.dim_track`   AS t ON s.track_id = t.track_id
 GROUP BY t.main_genre
 ORDER BY streams DESC;
 
@@ -104,80 +104,93 @@ ORDER BY listen_hour;
 
 
 -- ---------------------------------------------------------------------
--- Q8. RETENTION MESE SU MESE
--- Aggiunta 2026-09-03: docs/business_questions.md citava un intervallo
--- mese-su-mese e un calo stagionale che NESSUNA query calcolava. Un numero
--- documentato senza query dietro e' un'affermazione, non un risultato.
+-- Q8. MONTH-OVER-MONTH RETENTION
+-- Added 2026-09-03: docs/business_questions.md quoted a month-over-month
+-- range and a seasonal dip that NO query actually computed. A documented
+-- number with no query behind it is a claim, not a finding.
 --
--- ATTENZIONE (bug corretto lo stesso giorno): con un INNER JOIN fra il mese
--- precedente e quello corrente il risultato e' sempre 100%, perche' il join
--- elimina dal DENOMINATORE proprio gli utenti che non sono tornati — cioe'
--- l'unica cosa che la retention misura. Il denominatore dev'essere il mese
--- precedente per intero.
+-- WARNING (bug fixed the same day): with an INNER JOIN between the previous
+-- month and the current one the result is always 100%, because the join
+-- removes from the DENOMINATOR exactly the users who did not come back —
+-- i.e. the only thing retention measures. The denominator has to be the
+-- previous month in full.
 -- ---------------------------------------------------------------------
-WITH attivi_per_mese AS (
+WITH active_by_month AS (
   SELECT DISTINCT
-    DATE_TRUNC(listen_date, MONTH) AS mese,
+    DATE_TRUNC(listen_date, MONTH) AS month,
     user_id
-  FROM `streaming.F_Streams`
+  FROM `streaming.fct_streams`
 )
+
 SELECT
-  DATE_ADD(prev.mese, INTERVAL 1 MONTH)                               AS mese,
-  COUNT(DISTINCT prev.user_id)                                        AS attivi_mese_prec,
-  COUNT(DISTINCT cur.user_id)                                         AS tornati,
+  DATE_ADD(prev.month, INTERVAL 1 MONTH)                              AS month,
+  COUNT(DISTINCT prev.user_id)                                        AS active_prev_month,
+  COUNT(DISTINCT cur.user_id)                                         AS returned,
   ROUND(COUNT(DISTINCT cur.user_id)
         / NULLIF(COUNT(DISTINCT prev.user_id), 0) * 100, 1)           AS retention_pct
-FROM attivi_per_mese AS prev
-LEFT JOIN attivi_per_mese AS cur
-  ON cur.user_id = prev.user_id
- AND cur.mese = DATE_ADD(prev.mese, INTERVAL 1 MONTH)
-GROUP BY prev.mese
-ORDER BY mese;
+FROM active_by_month AS prev
+LEFT JOIN active_by_month AS cur
+  ON prev.user_id = cur.user_id
+ AND DATE_ADD(prev.month, INTERVAL 1 MONTH) = cur.month
+-- The last month has no following month to compare against: without this
+-- filter the query emitted a final row at 0.0% that looked like a retention
+-- collapse and was actually just the end of the data.
+WHERE prev.month < (SELECT MAX(m.month) FROM active_by_month AS m)
+GROUP BY prev.month
+ORDER BY month;
 
 
 -- ---------------------------------------------------------------------
--- Q9. STAGIONALITA' NORMALIZZATA PER UTENTE ATTIVO
--- Aggiunta 2026-09-03. Il volume grezzo mensile e' dominato dalla CRESCITA
--- della base utenti, non dalla stagione: gli stream di agosto sono il triplo
--- di quelli di gennaio soprattutto perche' ci sono il doppio degli utenti.
--- La stagionalita' si vede solo dividendo per gli utenti attivi in quel mese.
+-- Q9. SEASONALITY NORMALISED BY ACTIVE USERS
+-- Added 2026-09-03. Raw monthly volume is dominated by user-base GROWTH,
+-- not by season: August's streams are triple January's mostly because there
+-- are twice as many users. Seasonality only shows up once divided by the
+-- users active in that month.
 -- ---------------------------------------------------------------------
-WITH per_mese AS (
+WITH by_month AS (
   SELECT
-    DATE_TRUNC(listen_date, MONTH) AS mese,
-    COUNT(*)                       AS stream,
-    COUNT(DISTINCT user_id)        AS utenti_attivi
-  FROM `streaming.F_Streams`
-  GROUP BY mese
+    DATE_TRUNC(listen_date, MONTH) AS month,
+    COUNT(*)                       AS streams,
+    COUNT(DISTINCT user_id)        AS active_users
+  FROM `streaming.fct_streams`
+  GROUP BY month
 )
+
 SELECT
-  mese,
-  stream,
-  utenti_attivi,
-  ROUND(stream / utenti_attivi, 2)                                    AS stream_per_utente,
-  ROUND((stream / utenti_attivi)
-        / AVG(stream / utenti_attivi) OVER () * 100, 0)               AS indice_stagionale
-FROM per_mese
-ORDER BY mese;
+  month,
+  streams,
+  active_users,
+  ROUND(streams / active_users, 2)                                    AS streams_per_user,
+  ROUND((streams / active_users)
+        / AVG(streams / active_users) OVER () * 100, 0)               AS seasonal_index
+FROM by_month
+ORDER BY month;
 
 
 -- ---------------------------------------------------------------------
--- Q10. LIFT DEL WEEKEND, PER GIORNO
--- Aggiunta 2026-09-03: la Q5 restituiva i TOTALI di weekend e giorni feriali,
--- che non sono confrontabili — un mese ha ~22 giorni feriali e ~9 di weekend.
--- Il lift richiede la media PER GIORNO.
+-- Q10. WEEKEND LIFT, PER DAY
+-- Added 2026-09-03: Q5 returned weekend and weekday TOTALS, which aren't
+-- comparable — a month has ~22 weekdays and ~9 weekend days. The lift needs
+-- the PER-DAY average.
 -- ---------------------------------------------------------------------
-WITH per_giorno AS (
+-- Weekend is read from dim_time, not from EXTRACT(DAYOFWEEK): day numbering
+-- differs across engines — 1 is Sunday in BigQuery, Monday elsewhere — so
+-- `IN (1, 7)` means different things depending on where it runs. The
+-- calendar dimension already has the column, and it's the right place to
+-- read it from: that's exactly why it exists.
+WITH by_day AS (
   SELECT
-    listen_date,
-    EXTRACT(DAYOFWEEK FROM listen_date) IN (1, 7) AS is_weekend,
-    COUNT(*)                                      AS stream
-  FROM `streaming.F_Streams`
-  GROUP BY listen_date, is_weekend
+    f.listen_date,
+    d.is_weekend,
+    COUNT(*) AS streams
+  FROM `streaming.fct_streams` AS f
+  INNER JOIN `streaming.dim_time`    AS d ON f.listen_date = d.time_key
+  GROUP BY f.listen_date, d.is_weekend
 )
+
 SELECT
-  ROUND(AVG(IF(is_weekend, stream, NULL)), 0)                         AS media_weekend,
-  ROUND(AVG(IF(is_weekend, NULL, stream)), 0)                         AS media_feriali,
-  ROUND(AVG(IF(is_weekend, stream, NULL))
-        / AVG(IF(is_weekend, NULL, stream)) * 100 - 100, 1)           AS lift_pct
-FROM per_giorno;
+  ROUND(AVG(IF(is_weekend, streams, NULL)), 0)                        AS weekend_avg,
+  ROUND(AVG(IF(is_weekend, NULL, streams)), 0)                        AS weekday_avg,
+  ROUND(AVG(IF(is_weekend, streams, NULL))
+        / AVG(IF(is_weekend, NULL, streams)) * 100 - 100, 1)          AS lift_pct
+FROM by_day;

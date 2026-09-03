@@ -2,8 +2,18 @@ version: 2
 
 sources:
   - name: raw
-    database: "{{ env_var('DBT_DATABASE', 'my-project') }}"
-    schema: streaming
+    # FIX 2026-09-03: this used to be a hard-coded default 'my-project', which
+    # won over the project configured in the profile — all five sources
+    # resolved to my-project.streaming.*, so dbt failed for everyone else.
+    # target.database is the project of whichever profile is in use.
+    database: "{{ target.database }}"
+    # FIX 2026-09-03 (second round): this was a literal 'streaming'. The
+    # check `make deploy` runs before loading compares the passed DATASET
+    # against the dbt profile's dataset, but if the profile used a dataset
+    # other than 'streaming' the check would have approved it while these
+    # sources kept reading from 'streaming' — stale data or an error.
+    # target.schema always follows the profile in use, like target.database.
+    schema: "{{ target.schema }}"
     tables:
       # F_Streams is the raw landing table for the fact — dbt rebuilds and enriches
       # it into the final `fct_streams` mart (adds completion_ratio, is_engaged_stream),
@@ -13,5 +23,20 @@ sources:
       # no dbt model rebuilds a table under these names, so no raw/final split needed.
       - name: dim_user
       - name: dim_track
+      # ADDED 09/03: dim_platform had zero test coverage anywhere — unlike
+      # dim_user/dim_track, no staging model reads it (there is no
+      # stg_platform.sql), so it wasn't covered even transitively. fct_streams
+      # declares platform_id NOT NULL and mart_streaming_flat LEFT JOINs on it;
+      # a duplicate or missing platform_id would silently null out
+      # service_name or fan out a join with nothing catching it.
       - name: dim_platform
+        columns:
+          - name: platform_id
+            tests: [not_null, unique]
+      # ADDED 09/03: this was the only dimension with no test at all. Q5 and
+      # Q10 do an INNER JOIN against this table — a duplicate or missing
+      # time_key changes weekend lift and seasonality without failing anything.
       - name: dim_time
+        columns:
+          - name: time_key
+            tests: [not_null, unique]

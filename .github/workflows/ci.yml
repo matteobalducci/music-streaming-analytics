@@ -25,6 +25,16 @@ jobs:
       - name: Run data-quality checks
         run: python scripts/validate_data.py --dir /tmp/ci_data
 
+      # The sample is the only data committed to the repo, and the first file
+      # anyone cloning it opens. If it falls behind the fact table's schema,
+      # the repo distributes data its own scripts reject.
+      - name: Validate the committed public sample
+        # Against the VERSIONED dimensions, not against the dataset just
+        # generated: the sample contains users from the 45,000-user dataset,
+        # and validating it against smaller dimensions would flag as broken
+        # the referential integrity of data that is actually correct.
+        run: python scripts/validate_data.py --dir data --fact data/sample/F_Streams_sample.csv
+
   headline-metrics:
     # The figures quoted in the README are findings, not decoration. This job
     # fails if a change to the generator moves them, so the claims and the code
@@ -36,7 +46,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install dependencies
-        run: pip install -r requirements.txt pytest
+        run: pip install -r requirements.txt
       - name: Assert the README numbers still hold
         run: python -m pytest tests/ -v
 
@@ -49,6 +59,29 @@ jobs:
           python-version: "3.11"
       - name: Install sqlfluff
         run: pip install sqlfluff
-      - name: Lint SQL (informational)
+      # Made blocking on 09/03: a lint that can't fail isn't a check, it's
+      # decoration — it used to flag issues without stopping anything.
+      - name: Lint SQL
         run: sqlfluff lint sql/ --dialect bigquery
-        continue-on-error: true
+
+  dbt-compile:
+    # dbt models were never compiled in CI: a broken ref, a malformed YAML
+    # file, or a missing macro passed unnoticed until the first real
+    # `dbt build`. `dbt parse` resolves refs, sources and macros without
+    # connecting to BigQuery (no cloud credential required) — but for the
+    # same reason it does NOT verify that the tables actually exist or have
+    # the columns the models expect to read: a renamed source or a missing
+    # column on BigQuery passes this job and only fails in a `dbt build`
+    # against the real project. It's a structural check, not a live-schema one.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dbt
+        run: pip install 'dbt-bigquery>=1.10.5'
+      - name: Install packages
+        run: cd dbt/streaming && dbt deps
+      - name: Parse the project (resolves every ref and source)
+        run: cd dbt/streaming && dbt parse --profiles-dir ci --target ci

@@ -8,12 +8,12 @@ hits the same wall.
 
 ## 1. Date-partitioned load jobs silently write zero rows on a no-billing project
 
-**Symptom:** `make load` reports success (`✓ fct_streams  1,227,355 rows`), but
+**Symptom:** `make load` reports success (`✓ F_Streams  1,215,000 rows`), but
 `SELECT COUNT(*)` on the table returns `0`. The load job itself shows `state: DONE`,
-`errors: None`, and its own statistics report `outputRows: 1227355` — so nothing in
+`errors: None`, and its own statistics report `outputRows: 1215000` — so nothing in
 the job status hints that the write didn't actually land.
 
-**Cause:** `fct_streams` is loaded with `time_partitioning(field="listen_date")`
+**Cause:** the fact table is loaded with `time_partitioning(field="listen_date")`
 (intentional — a real warehouse partitions its biggest fact table by date to control
 bytes scanned). On a GCP project with **no billing account linked** — BigQuery's free
 "sandbox" mode — a date-partitioned load job silently no-ops the write instead of
@@ -22,15 +22,23 @@ failing or erroring. Confirmed with a minimal 2-row repro: identical load, parti
 queryable. Clustering alone (no time partitioning) is unaffected.
 
 **Fix:**
-- **Enable billing on the project.** The dataset here is ~117 MB — nowhere near
+- **Enable billing on the project.** The dataset here is ~102 MB — nowhere near
   BigQuery's free tier (10 GB storage / 1 TB queries per month), so this costs nothing
   in practice; billing just needs to be *linked* for partitioned loads to actually
   persist data.
-- **Until then:** load `fct_streams` without `time_partitioning` (keep
-  `clustering_fields=["track_id", "stream_source"]`, which works fine unbilled). This
-  gets you a fully queryable table today, just without partition pruning — the
+- **Until then:** load the raw `F_Streams` landing table (`fct_streams` is what dbt
+  *builds* from it, not what this script loads) without `time_partitioning` — keep
+  `clustering_fields=["track_id", "stream_source"]`, which works fine unbilled:
+  ```bash
+  NO_PARTITION=1 make deploy PROJECT=your-gcp-project     # or: make load NO_PARTITION=1 PROJECT=...
+  NO_PARTITION=1 PROJECT=your-gcp-project ./scripts/load_bigquery.sh   # bq CLI variant
+  ```
+  This gets you a fully queryable table today, just without partition pruning — the
   partitioning design is still correct and documented in `scripts/load_bigquery.py`;
-  re-enable it once billing is linked.
+  re-enable it (drop `NO_PARTITION`) once billing is linked. `load_bigquery.py` now
+  refuses to proceed silently if a load lands zero rows — the exact failure mode this
+  section describes — so a partitioned load attempted here fails loudly instead of
+  looking like success.
 
 ## 2. `pip install google-cloud-bigquery` falls back to compiling `grpcio` from source
 

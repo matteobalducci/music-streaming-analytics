@@ -1,0 +1,28 @@
+# Everything needed for the BigQuery/dbt path: `make load`, `make deploy`,
+# `make dbt-build`. Split out of requirements.txt on 2026-09-03, then
+# corrected the same day: the first split moved only dbt-bigquery here and
+# left google-cloud-bigquery in requirements.txt, which defeats the point —
+# docs/gcp_setup_notes.md#2 documents that google-cloud-bigquery ALONE
+# (independent of dbt-bigquery) is what pulls in the grpcio chain that can
+# trigger a 15-20 minute source build on some Intel Macs. The local, "no
+# cloud needed" workflow (`make install` -> generate/sample/validate/test/
+# charts) never touches BigQuery or dbt, so it shouldn't pay that cost either
+# way. Install this before `make load`, `make deploy`, or `make dbt-build`:
+# `make install-dbt`.
+
+# scripts/load_bigquery.py — the Python loader (load_bigquery.sh uses the bq
+# CLI directly and needs none of this file).
+google-cloud-bigquery>=3.11
+
+# scripts/check_dbt_target.py — `make deploy`'s guard that PROJECT/DATASET
+# match the resolved dbt profile before anything loads. Already a transitive
+# dependency of dbt-core; listed explicitly since this script needs it
+# independent of whether dbt itself is installed yet.
+PyYAML>=6.0
+
+# dbt on BigQuery (dbt/streaming). Floor 1.10.5: the generic-test
+# `arguments:` property used in dbt/streaming/models/**/*.yml is only
+# documented as supported from dbt-core 1.10.5 — an earlier install could
+# fail to compile those tests or misread the arguments. Verified working
+# end-to-end (dbt parse + a real `dbt build` against BigQuery) on 1.12.3.
+dbt-bigquery>=1.10.5

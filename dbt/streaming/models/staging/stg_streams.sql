@@ -4,6 +4,7 @@ with source as (
 )
 
 select
+    stream_id,
     user_id,
     track_id,
     platform_id,
@@ -18,4 +19,8 @@ select
     royalty_cost,
     revenue_generated
 from source
+-- A negative listen duration is corrupt data, not an edge case: it's dropped
+-- here. So the drop is never silent, `validate_data.py` fails if even one
+-- exists upstream — so in a healthy pipeline this clause never removes a
+-- row, and if it ever did, the load would already have stopped earlier.
 where listen_duration_sec >= 0

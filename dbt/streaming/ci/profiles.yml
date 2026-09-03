@@ -1,0 +1,15 @@
+# Profile used ONLY by CI for `dbt parse`.
+#
+# `dbt parse` resolves every ref, source and macro without opening a
+# connection, so no credential is needed here — and none should exist. The
+# real working profile stays at ~/.dbt/profiles.yml, outside the repo.
+streaming:
+  target: ci
+  outputs:
+    ci:
+      type: bigquery
+      method: oauth
+      project: ci-parse-only
+      dataset: streaming
+      threads: 1
+      location: EU

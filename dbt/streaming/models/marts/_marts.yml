@@ -4,26 +4,60 @@ models:
   - name: fct_streams
     description: Fact table at the grain of one listening event, enriched with completion ratio and engagement flag.
     columns:
+      # The grain is the table's central claim: without unique on a key, a
+      # duplicate load would double it without failing anything.
+      - name: stream_id
+        tests: [not_null, unique]
       - name: user_id
         tests:
           - not_null
-          - relationships: { to: ref('stg_users'), field: user_id }
+          - relationships:
+              arguments:
+                to: ref('stg_users')
+                field: user_id
       - name: track_id
         tests:
           - not_null
-          - relationships: { to: ref('stg_tracks'), field: track_id }
+          - relationships:
+              arguments:
+                to: ref('stg_tracks')
+                field: track_id
+      - name: platform_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('raw', 'dim_platform')
+                field: platform_id
+      - name: listen_date
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('raw', 'dim_time')
+                field: time_key
       - name: stream_source
         tests:
-          - accepted_values: { values: ['Algorithmic', 'Editorial', 'Search'] }
+          - accepted_values:
+              arguments:
+                values: ['Algorithmic', 'Editorial', 'Search']
       - name: is_engaged_stream
         tests: [not_null]
 
   - name: mart_discovery_efficiency
-    description: Weekly product KPIs per discovery source.
+    description: Product KPIs (skip rate, engagement) grouped by discovery source.
     columns:
       - name: stream_source
         tests: [not_null, unique]
+      # All four metrics share the same construction — round(avg(...) * 100, N)
+      # over the same group — so they get the same test, not just the first one.
       - name: skip_rate_pct
+        tests: [not_null]
+      - name: engaged_rate_pct
+        tests: [not_null]
+      - name: avg_completion_pct
+        tests: [not_null]
+      - name: like_rate_pct
         tests: [not_null]
 
   - name: mart_streaming_flat
@@ -32,13 +66,19 @@ models:
       dimension attribute flattened in) for BI tools that don't model stars
       natively — this is what Looker Studio connects to.
     columns:
+      - name: stream_id
+        tests: [not_null, unique]
       - name: user_id
         tests: [not_null]
       - name: track_id
         tests: [not_null]
+      - name: platform_id
+        tests: [not_null]
       - name: stream_source
         tests:
-          - accepted_values: { values: ['Algorithmic', 'Editorial', 'Search'] }
+          - accepted_values:
+              arguments:
+                values: ['Algorithmic', 'Editorial', 'Search']
 
   - name: mart_user_retention
     description: >
@@ -50,4 +90,6 @@ models:
         tests: [not_null, unique]
       - name: subscription_plan
         tests:
-          - accepted_values: { values: ['Free', 'Premium Individual', 'Premium Student', 'Premium Family'] }
+          - accepted_values:
+              arguments:
+                values: ['Free', 'Premium Individual', 'Premium Student', 'Premium Family']

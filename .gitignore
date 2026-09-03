@@ -10,6 +10,12 @@ venv/
 dbt/streaming/target/
 dbt/streaming/dbt_packages/
 dbt/streaming/logs/
+# dbt writes this anonymous-usage-tracking file next to whatever profiles
+# dir it runs against — including dbt/streaming/ci/, which is otherwise
+# committed for CI's `dbt parse`.
+.user.yml
 profiles.yml
+# ...except the read-only one CI uses for `dbt parse`.
+!dbt/streaming/ci/profiles.yml
 # OS
 .DS_Store

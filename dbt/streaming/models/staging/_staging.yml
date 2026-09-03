@@ -1,0 +1,37 @@
+version: 2
+
+# Keys are tested where they enter the pipeline, not just downstream: a
+# duplicate in staging propagates into every mart, multiplying every join.
+models:
+  - name: stg_streams
+    description: Typed listening events, one row per stream.
+    columns:
+      - name: stream_id
+        tests: [not_null, unique]
+      - name: user_id
+        tests: [not_null]
+      - name: track_id
+        tests: [not_null]
+      - name: platform_id
+        tests: [not_null]
+      - name: listen_date
+        tests: [not_null]
+
+  - name: stg_users
+    description: User dimension, one row per user.
+    columns:
+      - name: user_id
+        tests: [not_null, unique]
+      - name: subscription_plan
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Free', 'Premium Individual', 'Premium Student', 'Premium Family']
+
+  - name: stg_tracks
+    description: Track dimension, one row per track.
+    columns:
+      - name: track_id
+        tests: [not_null, unique]
+      - name: total_duration_sec
+        tests: [not_null]

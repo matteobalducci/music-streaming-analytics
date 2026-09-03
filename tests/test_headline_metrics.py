@@ -61,9 +61,9 @@ def pct(series) -> float:
 def check(name, actual):
     expected, tol = EXPECTED[name]
     assert abs(actual - expected) <= tol, (
-        f"{name}: {actual}% — atteso ~{expected}% (±{tol}).\n"
-        f"Se la modifica al modello è voluta, aggiorna EXPECTED **e** i numeri "
-        f"citati in README.md e docs/business_questions.md nello stesso commit."
+        f"{name}: {actual}% — expected ~{expected}% (±{tol}).\n"
+        f"If the modelling change is deliberate, update EXPECTED **and** the "
+        f"figures quoted in README.md and docs/business_questions.md in the same commit."
     )
 
 
@@ -88,8 +88,8 @@ def test_algorithmic_skips_roughly_twice_as_much_as_the_rest(streams):
     algo = streams[streams.stream_source == "Algorithmic"].is_skipped.mean()
     rest = streams[streams.stream_source != "Algorithmic"].is_skipped.mean()
     assert algo / rest > 1.6, (
-        f"il rapporto è sceso a {algo / rest:.2f}× — la conclusione del progetto "
-        f"sulla discovery efficiency non regge più"
+        f"the ratio dropped to {algo / rest:.2f}× — the project's finding "
+        f"on discovery efficiency no longer holds"
     )
 
 
@@ -113,8 +113,8 @@ def test_the_mobile_gap_is_about_five_points(streams):
     mobile = streams[streams.device_type.isin(MOBILE)].is_skipped.mean() * 100
     other = streams[~streams.device_type.isin(MOBILE)].is_skipped.mean() * 100
     assert 3.5 <= mobile - other <= 6.5, (
-        f"lo scarto mobile è {mobile - other:.1f}pp, atteso ~5pp: "
-        f"MOBILE_SKIP_LIFT potrebbe essere contato due volte"
+        f"the mobile gap is {mobile - other:.1f}pp, expected ~5pp: "
+        f"MOBILE_SKIP_LIFT may be counted twice"
     )
 
 
@@ -143,7 +143,7 @@ def test_skipped_streams_are_short_and_rarely_liked(streams):
     assert skipped.is_liked.mean() < played.is_liked.mean() / 3
 
 
-# --- retention: il numero che il progetto usa per dimostrare il suo punto ---
+# --- retention: the number the project uses to make its point -------------
 
 
 @pytest.fixture(scope="module")
@@ -158,35 +158,35 @@ def users(tmp_path_factory):
 
 
 def test_retention_matches_the_documented_figure(users):
-    """La conclusione della Q4 e' che il KPI ingenuo legge ~97% mentre la
-    retention vera e' ~82%. Se questo numero si muove, l'intero argomento del
-    progetto sulla differenza fra portata e retention smette di reggere.
+    """Q4's finding is that the naive KPI reads ~97% while real retention is
+    ~82%. If this number moves, the project's whole argument about the
+    difference between reach and retention stops holding up.
 
-    Questo test coglie il bug del 2026-09-03, in cui il flag `churned` veniva
-    calcolato e poi ignorato: ogni utente riceveva una data di abbandono entro
-    l'anno e la retention crollava al 27%.
+    This test catches the 2026-09-03 bug, where the `churned` flag was
+    computed and then ignored: every user got a churn date within the year
+    and retention collapsed to 27%.
     """
     churn = pd.to_datetime(users.churn_date)
     retention = (churn > "2024-12-31").mean() * 100
     assert 79 <= retention <= 85, (
-        f"retention {retention:.1f}%, attesa ~82%. Verifica la logica di churn "
-        f"in build_users(): il flag `churned` viene davvero applicato?"
+        f"retention {retention:.1f}%, expected ~82%. Check the churn logic "
+        f"in build_users(): is the `churned` flag actually applied?"
     )
 
 
 def test_churn_rate_matches_the_documented_figure(users):
-    """~18%, come dice la documentazione.
+    """~18%, as the documentation says.
 
-    La prima stesura confrontava il churn prodotto con `CHURN_RATE` letto dal
-    generatore stesso: una tautologia. Cambiare la costante avrebbe lasciato il
-    test verde mentre la documentazione diventava falsa. Qui il valore atteso e'
-    scritto a mano, perche' e' quello pubblicato.
+    The first draft compared the produced churn against `CHURN_RATE` read
+    from the generator itself: a tautology. Changing the constant would have
+    left the test green while the documentation became false. Here the
+    expected value is hard-coded, because it's the one that's published.
     """
     churn = pd.to_datetime(users.churn_date)
     realised = (churn <= "2024-12-31").mean() * 100
     assert 16.5 <= realised <= 19.5, (
-        f"abbandoni {realised:.1f}%, documentato ~18%. Se la modifica e' voluta, "
-        f"aggiorna README.md e docs/business_questions.md nello stesso commit."
+        f"churn {realised:.1f}%, documented ~18%. If the change is deliberate, "
+        f"update README.md and docs/business_questions.md in the same commit."
     )
 
 
@@ -196,18 +196,18 @@ def test_subscription_mix_matches_the_documented_split(users):
     for plan, expected in [("Free", 45), ("Premium Individual", 30),
                            ("Premium Student", 15), ("Premium Family", 10)]:
         assert abs(mix[plan] - expected) < 2.5, (
-            f"{plan}: {mix[plan]:.1f}%, atteso ~{expected}%"
+            f"{plan}: {mix[plan]:.1f}%, expected ~{expected}%"
         )
 
 
 def test_free_is_the_largest_single_segment(users):
-    """«Free e' il segmento singolo piu' grande, da li' parte il funnel di
-    conversione» — se smette di esserlo, la conclusione va riscritta."""
+    """"Free is the single largest segment, that's where the conversion
+    funnel starts" — if it stops being true, the finding needs rewriting."""
     mix = users.subscription_plan.value_counts()
     assert mix.idxmax() == "Free"
 
 
-# --- portata contro retention, stagionalita', e un risultato negativo -----
+# --- reach vs. retention, seasonality, and a negative result --------------
 
 
 @pytest.fixture(scope="module")
@@ -224,147 +224,148 @@ def both(tmp_path_factory):
 
 
 def test_the_naive_kpi_reads_near_100_percent(both):
-    """Q4 poggia sul contrasto fra il KPI ingenuo e la retention vera. Se ogni
-    utente ha almeno uno stream il KPI legge 100% e il contrasto sparisce —
-    ed e' quello che succedeva quando `churned` non veniva passato a
-    build_streams. Chi abbandona presto non deve comparire affatto.
+    """Q4 rests on the contrast between the naive KPI and real retention. If
+    every user has at least one stream the KPI reads 100% and the contrast
+    disappears — which is what used to happen when `churned` wasn't passed
+    to build_streams. Someone who churns early must not show up at all.
     """
     streams, users, _ = both
     naive = streams.user_id.nunique() / len(users) * 100
-    assert 94 <= naive <= 98, f"KPI ingenuo {naive:.1f}%, atteso ~96%"
+    assert 94 <= naive <= 98, f"naive KPI {naive:.1f}%, expected ~96%"
 
 
 def test_the_gap_between_reach_and_retention_is_the_finding(both):
-    """Il numero che conta non e' il KPI ne' la retention, ma la distanza fra i
-    due: e' l'intero argomento della Q4."""
+    """What matters isn't the KPI or the retention alone, but the gap between
+    the two: it's Q4's whole argument."""
     streams, users, _ = both
     naive = streams.user_id.nunique() / len(users) * 100
     real = (pd.to_datetime(users.churn_date) > "2024-12-31").mean() * 100
     assert naive - real > 12, (
-        f"lo scarto e' sceso a {naive - real:.1f}pp: senza distanza fra portata e "
-        f"retention la Q4 non dimostra piu' niente"
+        f"the gap dropped to {naive - real:.1f}pp: without a gap between reach "
+        f"and retention, Q4 no longer demonstrates anything"
     )
 
 
 def test_raw_monthly_volume_tracks_user_growth_not_season(both):
-    """Il volume grezzo NON e' un segnale stagionale: cresce con la base utenti.
-    Documentarlo come stagionalita' attribuirebbe alle campagne estive una
-    crescita che erano solo iscrizioni accumulate."""
+    """Raw volume is NOT a seasonal signal: it grows with the user base.
+    Documenting it as seasonality would credit summer campaigns for growth
+    that was just accumulated signups."""
     streams, _, _ = both
-    per_mese = streams.assign(m=pd.to_datetime(streams.listen_date).dt.month).groupby("m").size()
-    assert per_mese[8] > per_mese[1] * 2, (
-        "agosto non ha piu' molti piu' stream di gennaio: la crescita della base "
-        "utenti e' sparita dal modello, e la Q5 va riscritta"
+    by_month = streams.assign(m=pd.to_datetime(streams.listen_date).dt.month).groupby("m").size()
+    assert by_month[8] > by_month[1] * 2, (
+        "August no longer has far more streams than January: the user-base "
+        "growth has disappeared from the model, and Q5 needs rewriting"
     )
 
 
 def test_seasonality_appears_once_normalised_by_active_users(both):
-    """Divisa per utenti attivi, la stagionalita' emerge.
+    """Divided by active users, seasonality emerges.
 
-    Il denominatore e' lo stesso della Q9 — gli utenti che hanno effettivamente
-    ascoltato in quel mese — non quelli teoricamente eleggibili: un test che
-    misura una cosa diversa dalla query non protegge la query.
+    The denominator is the same as Q9's — users who actually listened that
+    month — not those theoretically eligible: a test that measures something
+    different from the query doesn't protect the query.
     """
     streams, _, _ = both
-    mese = pd.to_datetime(streams.listen_date).dt.to_period("M")
-    g = streams.groupby(mese).agg(n=("user_id", "size"), attivi=("user_id", "nunique"))
-    per_utente = g.n / g.attivi
-    idx = per_utente / per_utente.mean() * 100
+    month = pd.to_datetime(streams.listen_date).dt.to_period("M")
+    g = streams.groupby(month).agg(n=("user_id", "size"), active=("user_id", "nunique"))
+    per_user = g.n / g.active
+    idx = per_user / per_user.mean() * 100
 
-    assert idx.iloc[5:8].mean() > 110, f"picco estivo a {idx.iloc[5:8].mean():.0f}, atteso ~115"
-    assert idx.iloc[11] > 105, f"dicembre a {idx.iloc[11]:.0f}, atteso ~110"
-    assert idx.idxmin().month == 2, "il minimo non e' piu' febbraio"
+    assert idx.iloc[5:8].mean() > 110, f"summer peak at {idx.iloc[5:8].mean():.0f}, expected ~115"
+    assert idx.iloc[11] > 105, f"December at {idx.iloc[11]:.0f}, expected ~110"
+    assert idx.idxmin().month == 2, "the minimum is no longer February"
 
 
 def test_month_over_month_retention_is_not_trivially_one_hundred(both):
-    """Il bug della Q8: con un INNER JOIN fra mese precedente e corrente il
-    risultato e' sempre 100%, perche' il join toglie dal denominatore proprio
-    chi non e' tornato. Il denominatore dev'essere il mese precedente intero.
+    """Q8's bug: with an INNER JOIN between the previous month and the
+    current one, the result is always 100%, because the join removes from
+    the denominator exactly the users who didn't come back. The denominator
+    has to be the previous month in full.
     """
     streams, _, _ = both
-    mese = pd.to_datetime(streams.listen_date).dt.to_period("M")
-    attivi = streams.groupby(mese).user_id.unique().apply(set)
+    month = pd.to_datetime(streams.listen_date).dt.to_period("M")
+    active = streams.groupby(month).user_id.unique().apply(set)
 
-    valori = []
-    for i in range(len(attivi) - 1):
-        prec, cur = attivi.iloc[i], attivi.iloc[i + 1]
-        valori.append(len(prec & cur) / len(prec) * 100)
+    values = []
+    for i in range(len(active) - 1):
+        prev, cur = active.iloc[i], active.iloc[i + 1]
+        values.append(len(prev & cur) / len(prev) * 100)
 
-    assert max(valori) < 99.5, (
-        "la retention mese-su-mese e' ~100%: il denominatore sta escludendo "
-        "chi non e' tornato, che e' l'unica cosa che questa metrica misura"
+    assert max(values) < 99.5, (
+        "month-over-month retention is ~100%: the denominator is excluding "
+        "everyone who didn't come back, which is the only thing this metric measures"
     )
-    assert 87 <= min(valori) <= 92, f"minimo {min(valori):.1f}%, documentato ~90%"
-    assert 94 <= max(valori) <= 99, f"massimo {max(valori):.1f}%, documentato ~97%"
+    assert 87 <= min(values) <= 92, f"minimum {min(values):.1f}%, documented ~90%"
+    assert 94 <= max(values) <= 99, f"maximum {max(values):.1f}%, documented ~97%"
 
 
-# --- integrita' temporale e monetizzazione -------------------------------
+# --- temporal integrity and monetisation -----------------------------------
 
 
 def test_no_stream_happens_outside_the_users_lifetime(both):
-    """Una tabella dei fatti in cui un evento precede l'esistenza dell'utente
-    non e' difendibile, e rende inaffidabile ogni analisi temporale — comprese
-    la retention e la stagionalita' che questo progetto documenta.
+    """A fact table where an event precedes the user's existence isn't
+    defensible, and it makes any temporal analysis unreliable — including
+    exactly the retention and seasonality this project documents.
 
-    Prima del 2026-09-03 il 13,7% degli stream precedeva l'iscrizione e il 2,4%
-    seguiva l'abbandono: le date venivano estratte globalmente e l'utente
-    assegnato dopo, in modo indipendente.
+    Before 2026-09-03, 13.7% of streams preceded signup and 2.4% followed
+    churn: dates were drawn globally and the user assigned afterward,
+    independently.
     """
     streams, users, _ = both
     m = streams.merge(users[["user_id", "signup_date", "churn_date"]], on="user_id")
     d = pd.to_datetime(m.listen_date)
-    prima = (d < pd.to_datetime(m.signup_date)).mean() * 100
-    dopo = (d >= pd.to_datetime(m.churn_date)).mean() * 100
-    assert prima == 0, f"{prima:.2f}% degli stream precede l'iscrizione dell'utente"
-    assert dopo == 0, f"{dopo:.2f}% degli stream avviene dopo l'abbandono"
+    before = (d < pd.to_datetime(m.signup_date)).mean() * 100
+    after = (d >= pd.to_datetime(m.churn_date)).mean() * 100
+    assert before == 0, f"{before:.2f}% of streams precede the user's signup"
+    assert after == 0, f"{after:.2f}% of streams happen after churn"
 
 
 def test_revenue_actually_depends_on_the_plan(both):
-    """La conclusione «i piani Premium guidano i ricavi» dev'essere misurabile.
-    Fino al 2026-09-03 revenue_generated veniva estratto dalla stessa uniforme
-    per tutti, quindi quella frase non poggiava su nulla."""
+    """The finding "Premium plans drive revenue" has to be measurable. Until
+    2026-09-03, revenue_generated was drawn from the same uniform
+    distribution for everyone, so that sentence rested on nothing."""
     streams, users, _ = both
     m = streams.merge(users[["user_id", "subscription_plan"]], on="user_id")
     per_stream = m.groupby("subscription_plan").revenue_generated.mean()
     assert per_stream["Premium Individual"] > per_stream["Free"] * 3, (
-        "il Premium non rende piu' del Free per stream: la Q3 non dimostra niente"
+        "Premium doesn't earn more than Free per stream: Q3 doesn't demonstrate anything"
     )
-    quota = m.groupby("subscription_plan").revenue_generated.sum()
-    premium = quota[quota.index != "Free"].sum() / quota.sum() * 100
-    assert 78 <= premium <= 86, f"quota ricavi Premium {premium:.1f}%, documentata ~82%"
+    share = m.groupby("subscription_plan").revenue_generated.sum()
+    premium = share[share.index != "Free"].sum() / share.sum() * 100
+    assert 78 <= premium <= 86, f"Premium revenue share {premium:.1f}%, documented ~82%"
 
 
 def test_royalty_is_only_paid_on_a_real_listen(both):
-    """Non si pagano diritti su un brano saltato dopo due secondi."""
+    """No royalty is paid on a track skipped after two seconds."""
     streams, _, _ = both
     assert streams[streams.is_skipped == 1].royalty_cost.max() == 0
     assert streams[streams.is_skipped == 0].royalty_cost.min() > 0
 
 
-# --- la curva di retention che la dashboard mostra -----------------------
+# --- the retention curve the dashboard shows -------------------------------
 
 
 def test_retention_at_april_matches_the_dashboard(users):
-    """La dashboard riporta 92,27% ad aprile e 82,28% a fine anno: due punti
-    della stessa curva. Con un offset di abbandono uniforme aprile leggeva
-    96,3% — il churn dev'essere concentrato all'inizio, come nella realta' e
-    come nei dati caricati."""
+    """The dashboard reports 92.27% at April and 82.28% at year end: two
+    points on the same curve. With a uniform churn offset, April read
+    96.3% — churn has to be front-loaded, as it is in reality and in the
+    loaded data."""
     churn = pd.to_datetime(users.churn_date)
-    aprile = (churn > "2024-04-30").mean() * 100
-    fine = (churn > "2024-12-31").mean() * 100
-    assert 91 <= aprile <= 93.5, f"retention aprile {aprile:.2f}%, dashboard 92,27%"
-    assert 81 <= fine <= 83.5, f"retention fine anno {fine:.2f}%, dashboard 82,28%"
-    assert aprile > fine, "la retention deve calare nel corso dell'anno"
+    april = (churn > "2024-04-30").mean() * 100
+    year_end = (churn > "2024-12-31").mean() * 100
+    assert 91 <= april <= 93.5, f"April retention {april:.2f}%, dashboard 92.27%"
+    assert 81 <= year_end <= 83.5, f"year-end retention {year_end:.2f}%, dashboard 82.28%"
+    assert april > year_end, "retention has to decline over the course of the year"
 
 
 def test_churn_is_front_loaded(users):
-    """Chi abbandona lo fa presto: quasi la meta' entro aprile. Una coda piatta
-    significherebbe utenti che se ne vanno a caso, che non e' come si comportano."""
+    """Whoever churns does so early: nearly half by April. A flat tail would
+    mean users leaving at random, which isn't how they behave."""
     churn = pd.to_datetime(users.churn_date)
-    entro_anno = churn <= "2024-12-31"
-    entro_aprile = churn <= "2024-04-30"
-    quota = entro_aprile.sum() / entro_anno.sum() * 100
-    assert 35 <= quota <= 55, (
-        f"solo il {quota:.0f}% degli abbandoni cade entro aprile: la curva non e' "
-        f"piu' concentrata all'inizio"
+    within_year = churn <= "2024-12-31"
+    within_april = churn <= "2024-04-30"
+    share = within_april.sum() / within_year.sum() * 100
+    assert 35 <= share <= 55, (
+        f"only {share:.0f}% of churn falls within April: the curve is no "
+        f"longer front-loaded"
     )

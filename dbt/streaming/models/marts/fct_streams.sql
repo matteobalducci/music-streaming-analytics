@@ -8,6 +8,7 @@ tracks as (
 )
 
 select
+    s.stream_id,
     s.user_id,
     s.track_id,
     s.platform_id,
@@ -20,8 +21,8 @@ select
     s.is_liked,
     s.listen_duration_sec,
     s.revenue_generated,
-    -- FIX 2026-09-03: royalty_cost veniva perso da fct_streams, quindi dopo
-    -- dbt il Gross Margin documentato nella dashboard non era calcolabile.
+    -- FIX 2026-09-03: royalty_cost used to be lost from fct_streams, so
+    -- after dbt the Gross Margin documented in the dashboard was uncomputable.
     s.royalty_cost,
     least(safe_divide(s.listen_duration_sec, t.total_duration_sec), 1.0) as completion_ratio,
     (not s.is_skipped and safe_divide(s.listen_duration_sec, t.total_duration_sec) > 0.5) as is_engaged_stream

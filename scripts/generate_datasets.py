@@ -49,17 +49,17 @@ MONTH_MULT = {1: .85, 2: .82, 3: .9, 4: .95, 5: 1.0, 6: 1.15,
               7: 1.25, 8: 1.2, 9: .95, 10: .95, 11: .95, 12: 1.1}  # summer + Dec lift
 WEEKEND_LIFT = 1.25
 
-# Ricavo medio per stream, per piano. Il Free monetizza con la pubblicita' —
-# pochi millesimi per ascolto; i piani Premium ripartiscono l'abbonamento sugli
-# ascolti del mese, quindi rendono molto di piu' per stream. Senza questa
-# differenza la Q3 non puo' dire nulla su quale piano genera i ricavi.
+# Average revenue per stream, by plan. Free monetises with ads — a few
+# thousandths per listen; Premium plans split the subscription across the
+# month's listens, so they earn far more per stream. Without this
+# difference Q3 couldn't say anything about which plan drives revenue.
 REVENUE_PER_STREAM = {
     "Free": 0.0018,
     "Premium Student": 0.0052,
     "Premium Family": 0.0061,
     "Premium Individual": 0.0079,
 }
-ROYALTY_SHARE = 0.68   # quota del ricavo che va alle etichette
+ROYALTY_SHARE = 0.68   # share of revenue that goes to the labels
 # Listening hour is close to uniform in the analysed dataset (no circadian dip) —
 # match that rather than inventing a pattern the real data doesn't show.
 HOUR_W = np.ones(24)
@@ -69,7 +69,7 @@ def build_platform():
     return pd.DataFrame({"platform_id": range(1, 5), "service_name": PLATFORMS})
 
 
-def build_time(year, rng):
+def build_time(year):
     days = pd.date_range(f"{year}-01-01", f"{year}-12-31", freq="D")
     return pd.DataFrame({
         "time_key": days.strftime("%Y-%m-%d"),
@@ -81,24 +81,23 @@ def build_time(year, rng):
 
 def build_users(n, rng):
     signup = pd.to_datetime(f"{YEAR-1}-08-01") + pd.to_timedelta(rng.integers(0, 400, n), "D")
-    # FIX 2026-09-03: `churned` era calcolato e mai usato — la riga successiva
-    # sovrascriveva la serie per TUTTI gli utenti, dando a ognuno una data di
-    # abbandono dentro l'anno. La Q4 del repo, che misura la retention come
-    # `churn_date IS NULL OR churn_date > '2024-12-31'`, restituiva quindi il 27%
-    # invece dell'82% documentato e presente nei dati caricati su BigQuery.
-    # Nessun controllo se ne accorgeva: il dataset si generava, i controlli di
-    # qualita' passavano, l'SQL girava. Solo la conclusione era falsa.
+    # FIX 2026-09-03: `churned` used to be computed and never used — the next
+    # line overwrote the series for ALL users, giving everyone a churn date
+    # inside the year. The repo's Q4, which measures retention as
+    # `churn_date IS NULL OR churn_date > '2024-12-31'`, therefore read 27%
+    # instead of the 82% documented and present in the data loaded on BigQuery.
+    # No check caught it: the dataset generated fine, the quality checks
+    # passed, the SQL ran. Only the finding was false.
     churned = rng.random(n) < CHURN_RATE
 
-    # Chi abbandona lo fa entro la finestra di analisi; chi resta riceve una data
-    # oltre l'anno — come nel dataset caricato, dove churn_date e' valorizzata per
-    # tutti ma solo il 17,7% cade entro il 2024.
-    # L'abbandono e' concentrato all'inizio: chi si iscrive e non si affeziona
-    # se ne va nelle prime settimane, non a meta' del secondo anno. Una
-    # distribuzione esponenziale riproduce quella forma — e riproduce anche i
-    # dati caricati, dove il 44% di chi abbandona lo fa entro aprile. Con un
-    # offset uniforme la retention di aprile leggeva 96,3% contro il 92,3%
-    # della dashboard.
+    # Whoever churns does so within the analysis window; whoever stays gets a
+    # date past the year — matching the loaded dataset, where churn_date is
+    # populated for everyone but only 17.7% falls within 2024.
+    # Churn is front-loaded: someone who signs up and doesn't take to it
+    # leaves within the first weeks, not halfway through the second year. An
+    # exponential distribution reproduces that shape — and it also reproduces
+    # the loaded data, where 44% of churners do so by April. With a uniform
+    # offset, April retention read 96.3% against the dashboard's 92.3%.
     offset = np.clip(rng.exponential(110, n), 20, 500).astype(int)
     churn = (signup + pd.to_timedelta(offset, "D")).to_numpy()
     year_end = np.datetime64(f"{YEAR}-12-31")
@@ -106,7 +105,7 @@ def build_users(n, rng):
 
     churn = np.where(
         churned,
-        np.minimum(churn, year_end),                                  # abbandona: dentro l'anno
+        np.minimum(churn, year_end),                                  # churns: within the year
         np.maximum(churn, next_year) + rng.integers(0, 300, n).astype("timedelta64[D]"),
     )
     churn = pd.DatetimeIndex(churn)
@@ -145,67 +144,66 @@ def build_streams(n_users, tracks, time_dim, churned, signup, churn_dates,
 
     total = n_users * STREAMS_PER_USER
 
-    # FIX 2026-09-03: `churned` era il terzo parametro morto di questo file —
-    # arrivava nella firma e non veniva mai usato, quindi gli stream si
-    # distribuivano uniformemente su TUTTI gli utenti e ognuno ne riceveva
-    # almeno uno. Il KPI "attivi / iscritti" leggeva quindi il 100%.
+    # FIX 2026-09-03: `churned` was this file's dead third parameter — it
+    # arrived in the signature and was never used, so streams were spread
+    # uniformly across ALL users and everyone got at least one. The "active /
+    # signed-up" KPI therefore read 100%.
     #
-    # Q4 costruisce il suo argomento proprio su quel numero: «il KPI ingenuo
-    # legge ~97%, ma quella e' portata, non retention». Con il 100% l'esempio
-    # perdeva il suo contrasto piu' netto, e non corrispondeva ai dati caricati
-    # (97,3%). Chi abbandona ascolta meno, e qualcuno non compare affatto.
-    # Il peso di un utente e' la frazione dell'anno in cui e' stato attivo:
-    # chi si iscrive a meta' anno, o chi abbandona a gennaio, ascolta meno. Chi
-    # ha gia' abbandonato prima che l'anno cominci non compare affatto, ed e'
-    # esattamente cosi' che il KPI "attivi / iscritti" scende sotto il 100%.
+    # Q4 builds its whole argument on that number: "the naive KPI reads
+    # ~97%, but that's reach, not retention." At 100% the example lost its
+    # sharpest contrast, and didn't match the loaded data (97.3%). Someone
+    # who churns listens less, and some don't show up at all. A user's
+    # weight is the fraction of the year they were active: someone who
+    # signs up mid-year, or churns in January, listens less. Someone who had
+    # already churned before the year began doesn't show up at all, and
+    # that's exactly how the "active / signed-up" KPI drops below 100%.
     year_start = np.datetime64(f"{YEAR}-01-01")
     year_end_np = np.datetime64(f"{YEAR}-12-31")
     span = (year_end_np - year_start).astype(int) + 1
 
-    inizio = np.maximum(signup.to_numpy().astype("datetime64[D]"), year_start)
-    # Il giorno dell'abbandono e' il primo giorno NON piu' attivo: la finestra
-    # si chiude il giorno prima, cosi' nessuno stream cade su o dopo il churn.
-    fine = np.minimum(churn_dates.to_numpy().astype("datetime64[D]")
-                      - np.timedelta64(1, "D"), year_end_np)
-    giorni_attivi = np.clip((fine - inizio).astype(int) + 1, 0, span)
+    window_start = np.maximum(signup.to_numpy().astype("datetime64[D]"), year_start)
+    # The churn day is the first day NO LONGER active: the window closes the
+    # day before, so no stream falls on or after churn.
+    window_end = np.minimum(churn_dates.to_numpy().astype("datetime64[D]")
+                            - np.timedelta64(1, "D"), year_end_np)
+    active_days = np.clip((window_end - window_start).astype(int) + 1, 0, span)
 
-    user_weight = giorni_attivi.astype(float)
+    user_weight = active_days.astype(float)
     if user_weight.sum() == 0:
         user_weight = np.ones(n_users)
     user_weight = user_weight / user_weight.sum()
 
-    # L'utente si sceglie PRIMA della data, perche' la data deve cadere nella
-    # sua finestra di attivita'.
+    # The user is chosen BEFORE the date, because the date has to fall
+    # inside their active window.
     #
-    # FIX 2026-09-03: prima le date venivano estratte globalmente e l'utente
-    # assegnato dopo, in modo indipendente. Il risultato era che il 13,7% degli
-    # stream precedeva l'iscrizione dell'utente e il 2,4% avveniva dopo il suo
-    # abbandono. Una tabella dei fatti in cui un evento precede l'esistenza
-    # dell'utente non e' difendibile, e rende inaffidabile qualsiasi analisi
-    # temporale — comprese proprio la retention e la stagionalita' che il
-    # progetto documenta.
+    # FIX 2026-09-03: dates used to be drawn globally and the user assigned
+    # afterward, independently. The result was that 13.7% of streams
+    # preceded the user's signup and 2.4% happened after their churn. A fact
+    # table where an event precedes the user's existence isn't defensible,
+    # and it makes any temporal analysis unreliable — including exactly the
+    # retention and seasonality this project documents.
     user_idx = rng.choice(n_users, total, p=user_weight)
 
-    # Finestra ammessa per ciascuno stream, in indici di giorno dell'anno.
-    primo = np.searchsorted(days.to_numpy(), inizio.astype("datetime64[ns]"))
-    ultimo = np.searchsorted(days.to_numpy(), fine.astype("datetime64[ns]"))
-    lo, hi = primo[user_idx], np.maximum(ultimo[user_idx], primo[user_idx])
+    # Allowed window for each stream, as day-of-year indices.
+    window_start_idx = np.searchsorted(days.to_numpy(), window_start.astype("datetime64[ns]"))
+    window_end_idx = np.searchsorted(days.to_numpy(), window_end.astype("datetime64[ns]"))
+    lo, hi = window_start_idx[user_idx], np.maximum(window_end_idx[user_idx], window_start_idx[user_idx])
 
-    # Si estrae dalla distribuzione stagionale e si ripesca solo cio' che cade
-    # fuori finestra: dopo pochi giri restano pochissimi casi, che si assegnano
-    # uniformemente dentro la finestra. Cosi' la stagionalita' resta intatta per
-    # la stragrande maggioranza degli eventi senza costruire una distribuzione
-    # separata per ognuno dei 45.000 utenti.
+    # Draw from the seasonal distribution and only re-draw what falls
+    # outside the window: after a few passes very few cases remain, which
+    # are assigned uniformly inside the window. This keeps seasonality
+    # intact for the vast majority of events without building a separate
+    # distribution for each of the 45,000 users.
     day_idx = rng.choice(len(days), total, p=w)
     for _ in range(12):
-        fuori = (day_idx < lo) | (day_idx > hi)
-        if not fuori.any():
+        out_of_window = (day_idx < lo) | (day_idx > hi)
+        if not out_of_window.any():
             break
-        day_idx[fuori] = rng.choice(len(days), int(fuori.sum()), p=w)
-    fuori = (day_idx < lo) | (day_idx > hi)
-    if fuori.any():
-        day_idx[fuori] = lo[fuori] + (rng.random(int(fuori.sum()))
-                                      * (hi[fuori] - lo[fuori] + 1)).astype(int)
+        day_idx[out_of_window] = rng.choice(len(days), int(out_of_window.sum()), p=w)
+    out_of_window = (day_idx < lo) | (day_idx > hi)
+    if out_of_window.any():
+        day_idx[out_of_window] = lo[out_of_window] + (rng.random(int(out_of_window.sum()))
+                                      * (hi[out_of_window] - lo[out_of_window] + 1)).astype(int)
     day_idx = np.clip(day_idx, lo, hi)
 
     listen_date = days.dt.strftime("%Y-%m-%d").to_numpy()[day_idx]
@@ -230,19 +228,23 @@ def build_streams(n_users, tracks, time_dim, churned, signup, churn_dates,
                           (rng.uniform(2, 30, total)).astype(int),
                           (full * rng.uniform(0.6, 1.0, total)).astype(int))
 
-    # FIX 2026-09-03: `revenue_generated` era estratto dalla stessa uniforme per
-    # tutti, indipendentemente dal piano — quindi la conclusione «i piani Premium
-    # guidano i ricavi» non era misurabile sui dati, e la Q3 sommava lo stesso
-    # ricavo anche agli utenti Free. Ora il ricavo per stream dipende dal piano:
-    # il Free monetizza con la pubblicita' (poco per stream), il Premium con
-    # l'abbonamento ripartito sugli ascolti.
-    piano_utente = plans_by_user[user_idx]
-    base = np.vectorize(REVENUE_PER_STREAM.get)(piano_utente)
+    # FIX 2026-09-03: `revenue_generated` used to be drawn from the same
+    # uniform distribution for everyone regardless of plan — so the finding
+    # "Premium plans drive revenue" wasn't measurable in the data, and Q3
+    # summed the same revenue even for Free users. Now revenue per stream
+    # depends on the plan: Free monetises with ads (little per stream),
+    # Premium with the subscription split across listens.
+    user_plan = plans_by_user[user_idx]
+    base = np.vectorize(REVENUE_PER_STREAM.get)(user_plan)
     revenue = (base * rng.uniform(0.75, 1.25, total)).round(5)
 
-    # Il costo di royalty si paga solo su un ascolto vero, non su uno skip.
+    # Royalty is only paid on a real listen, not on a skip.
     royalty = np.where(is_skipped, 0.0, revenue * ROYALTY_SHARE).round(5)
     return pd.DataFrame({
+        # ADDED 09/03: without a key, the declared grain — one row per
+        # listening event — is neither verifiable nor deduplicable, and a
+        # duplicate load would go unnoticed.
+        "stream_id": np.arange(1, total + 1),
         "user_id": user_idx + 1,
         "track_id": track_id,
         "platform_id": rng.integers(1, 5, total),
@@ -267,11 +269,19 @@ def main():
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
+    # Without these checks `--users 0` produced an empty dataset that the
+    # generator reported as successful, and the failure only showed up much
+    # later, as a division by zero inside some metric.
+    if args.users <= 0:
+        parser.error("--users must be positive")
+    if args.tracks <= 0:
+        parser.error("--tracks must be positive")
+
     rng = np.random.default_rng(args.seed)
     os.makedirs(args.out, exist_ok=True)
 
     platform = build_platform()
-    time_dim = build_time(YEAR, rng)
+    time_dim = build_time(YEAR)
     users, churned = build_users(args.users, rng)
     tracks = build_tracks(args.tracks, rng)
     streams = build_streams(args.users, tracks, time_dim, churned,

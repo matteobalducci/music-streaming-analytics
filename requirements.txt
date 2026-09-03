@@ -1,13 +1,14 @@
-# Core (dataset generation, charts, data-quality checks)
+# Core — the local, "no cloud needed" path: generate/sample/validate/test/charts.
+# Nothing in this file touches BigQuery or dbt: `make install` (this file) is
+# meant to be safe and fast on any machine. Everything cloud-related lives in
+# requirements-cloud.txt — see that file for why the split exists.
 pandas>=2.0
 numpy>=1.24
 matplotlib>=3.7
 
-# BigQuery loading (scripts/load_bigquery.py)
-google-cloud-bigquery>=3.11
-
-# dbt on BigQuery (dbt/streaming) — install when you build the models
-# dbt-bigquery>=1.7
-
-# Tests (tests/) — assert the README's headline figures still hold
+# Tests (tests/) — assert the README's headline figures still hold, and that
+# the BigQuery SQL in sql/analysis/ actually computes them (transpiled to
+# DuckDB and executed — see tests/conftest.py for what that does and doesn't prove)
 pytest>=7.4
+duckdb>=0.10
+sqlglot>=23.0

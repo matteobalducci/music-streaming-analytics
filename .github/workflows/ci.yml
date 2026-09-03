@@ -25,6 +25,21 @@ jobs:
       - name: Run data-quality checks
         run: python scripts/validate_data.py --dir /tmp/ci_data
 
+  headline-metrics:
+    # The figures quoted in the README are findings, not decoration. This job
+    # fails if a change to the generator moves them, so the claims and the code
+    # cannot drift apart silently — which is exactly what happened once already.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest
+      - name: Assert the README numbers still hold
+        run: python -m pytest tests/ -v
+
   lint-sql:
     runs-on: ubuntu-latest
     steps:

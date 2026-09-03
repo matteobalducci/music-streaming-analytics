@@ -1,4 +1,4 @@
-.PHONY: help install generate validate charts load dbt-build all clean
+.PHONY: help install generate test validate charts load dbt-build all clean
 
 PROJECT ?= your-gcp-project
 DATASET ?= streaming
@@ -10,7 +10,10 @@ install:         ## Install Python dependencies
 	pip install -r requirements.txt
 
 generate:        ## Regenerate the full dataset (1.2M rows, seeded)
-	python scripts/generate_datasets.py --out data/ --users 50000 --seed 42
+	python scripts/generate_datasets.py --out data/ --users 45000 --seed 42
+
+test:            ## Assert the README's headline numbers still hold
+	python -m pytest tests/ -v
 
 validate:        ## Run the data-quality checks
 	python scripts/validate_data.py --dir data
@@ -24,7 +27,7 @@ load:            ## Load the star schema into BigQuery (set PROJECT=...)
 dbt-build:       ## Build + test the dbt models
 	cd dbt/streaming && dbt build
 
-all: validate load dbt-build   ## Validate, load to BigQuery, build dbt
+all: test validate load dbt-build   ## Validate, load to BigQuery, build dbt
 
 clean:           ## Remove generated artifacts
 	rm -f data/F_Streams.csv

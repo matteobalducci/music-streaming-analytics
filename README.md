@@ -25,7 +25,12 @@ This is not a "count the streams" dashboard. It measures **stream quality, disco
 </tr>
 </table>
 
-Dataset: **1.23M listening events · 45,000 users · 100 tracks · 4 platforms · full year 2024.**
+Dataset: **1.22M listening events · 45,000 users · 100 tracks · 4 platforms · full year 2024.**
+
+The dataset is synthetic and **seeded**: `make generate` reproduces it, and
+[`tests/test_headline_metrics.py`](tests/test_headline_metrics.py) asserts that the
+figures quoted below still come out of it. They are findings, so they are covered by
+CI rather than left to drift.
 
 ---
 

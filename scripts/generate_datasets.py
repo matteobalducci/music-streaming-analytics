@@ -33,7 +33,15 @@ SOURCES = ["Algorithmic", "Editorial", "Search"]
 SOURCE_P = [0.40, 0.20, 0.40]
 
 # Skip probability by discovery source — the dataset's defining signal.
-SKIP_BY_SOURCE = {"Algorithmic": 0.42, "Editorial": 0.22, "Search": 0.22}
+# BASE skip probabilities, before MOBILE_SKIP_LIFT is added on top. Mobile is
+# 2 of 5 device types, so the lift raises each realised rate by 0.4 * 0.05 = 2pp:
+#   Algorithmic 0.40 -> 42%   Editorial 0.20 -> 22%   Search 0.20 -> 22%
+# which are the figures the README and the dashboard quote.
+#
+# FIX 2026-09-03: these had been set to the *realised* values (0.42/0.22/0.22),
+# which double-counted the lift and produced 44%/24%/24% — silently breaking the
+# headline numbers in the README. tests/test_headline_metrics.py now locks them.
+SKIP_BY_SOURCE = {"Algorithmic": 0.40, "Editorial": 0.20, "Search": 0.20}
 MOBILE_SKIP_LIFT = 0.05          # mobile devices skip a bit more
 CHURN_RATE = 0.18
 STREAMS_PER_USER = 27

@@ -141,3 +141,67 @@ def test_skipped_streams_are_short_and_rarely_liked(streams):
     assert skipped.listen_duration_sec.max() <= 30
     assert played.listen_duration_sec.min() > 30
     assert skipped.is_liked.mean() < played.is_liked.mean() / 3
+
+
+# --- retention: il numero che il progetto usa per dimostrare il suo punto ---
+
+
+@pytest.fixture(scope="module")
+def users(tmp_path_factory):
+    out = tmp_path_factory.mktemp("users")
+    subprocess.run(
+        [sys.executable, os.path.join(ROOT, "scripts", "generate_datasets.py"),
+         "--out", str(out), "--users", "8000", "--seed", "42"],
+        check=True, capture_output=True,
+    )
+    return pd.read_csv(out / "D_Users.csv")
+
+
+def test_retention_matches_the_documented_figure(users):
+    """La conclusione della Q4 e' che il KPI ingenuo legge ~97% mentre la
+    retention vera e' ~82%. Se questo numero si muove, l'intero argomento del
+    progetto sulla differenza fra portata e retention smette di reggere.
+
+    Questo test coglie il bug del 2026-09-03, in cui il flag `churned` veniva
+    calcolato e poi ignorato: ogni utente riceveva una data di abbandono entro
+    l'anno e la retention crollava al 27%.
+    """
+    churn = pd.to_datetime(users.churn_date)
+    retention = (churn > "2024-12-31").mean() * 100
+    assert 79 <= retention <= 85, (
+        f"retention {retention:.1f}%, attesa ~82%. Verifica la logica di churn "
+        f"in build_users(): il flag `churned` viene davvero applicato?"
+    )
+
+
+def test_churn_rate_tracks_the_configured_constant(users):
+    """CHURN_RATE e' 0.18 e la documentazione cita 17,7%: devono coincidere."""
+    from importlib import util
+    spec = util.spec_from_file_location(
+        "gen", os.path.join(ROOT, "scripts", "generate_datasets.py"))
+    gen = util.module_from_spec(spec)
+    spec.loader.exec_module(gen)
+
+    churn = pd.to_datetime(users.churn_date)
+    realised = (churn <= "2024-12-31").mean()
+    assert abs(realised - gen.CHURN_RATE) < 0.02, (
+        f"abbandoni reali {realised:.1%} contro CHURN_RATE={gen.CHURN_RATE:.0%}: "
+        f"la costante non governa piu' i dati che produce"
+    )
+
+
+def test_subscription_mix_matches_the_documented_split(users):
+    """Free ~45% · Individual ~30% · Student ~15% · Family ~10%."""
+    mix = users.subscription_plan.value_counts(normalize=True) * 100
+    for plan, expected in [("Free", 45), ("Premium Individual", 30),
+                           ("Premium Student", 15), ("Premium Family", 10)]:
+        assert abs(mix[plan] - expected) < 2.5, (
+            f"{plan}: {mix[plan]:.1f}%, atteso ~{expected}%"
+        )
+
+
+def test_free_is_the_largest_single_segment(users):
+    """«Free e' il segmento singolo piu' grande, da li' parte il funnel di
+    conversione» — se smette di esserlo, la conclusione va riscritta."""
+    mix = users.subscription_plan.value_counts()
+    assert mix.idxmax() == "Free"

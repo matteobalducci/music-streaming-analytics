@@ -1,6 +1,6 @@
 # Business Questions & Findings
 
-This project treats the dataset as the **digital twin of a streaming platform** and answers the questions a product-analytics team would actually ask. Figures come from the full 1.23M-event dataset (2024).
+This project treats the dataset as the **digital twin of a streaming platform** and answers the questions a product-analytics team would actually ask. Figures come from the full 1.22M-event dataset (2024).
 
 ---
 

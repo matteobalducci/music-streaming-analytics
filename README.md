@@ -108,7 +108,7 @@ Everything is driven by a `Makefile` (`make help` lists the targets):
 
 ```bash
 make install          # install Python dependencies
-make generate         # regenerate the full 1.23M-row dataset (seeded, deterministic)
+make generate         # regenerate the full 1.22M-row dataset (seeded, deterministic)
 make validate         # run the data-quality gate (referential integrity, invariants)
 make charts           # rebuild the README charts from the data
 ```
@@ -128,7 +128,7 @@ cd dbt/streaming && dbt deps && dbt build    # build + test the models
 > silently writes zero rows without billing linked, and `pip install` may fall back to
 > a slow source build of `grpcio` on some Intel Mac setups. Both have quick fixes.
 
-The **full, real fact table** (1.23M rows, 97 MB — the exact data behind the Power BI
+The **full, real fact table** (1.22M rows, 97 MB — the exact data behind the Power BI
 dashboard) is published as a [**GitHub Release asset**](../../releases) rather than
 committed to git history, so the repo stays clone-and-run. A 100k-row real sample lives
 in [`data/sample/`](data/sample/) for development, CI, and `make load` (which falls back

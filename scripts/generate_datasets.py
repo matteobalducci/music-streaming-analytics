@@ -69,11 +69,30 @@ def build_time(year, rng):
 
 def build_users(n, rng):
     signup = pd.to_datetime(f"{YEAR-1}-08-01") + pd.to_timedelta(rng.integers(0, 400, n), "D")
+    # FIX 2026-09-03: `churned` era calcolato e mai usato — la riga successiva
+    # sovrascriveva la serie per TUTTI gli utenti, dando a ognuno una data di
+    # abbandono dentro l'anno. La Q4 del repo, che misura la retention come
+    # `churn_date IS NULL OR churn_date > '2024-12-31'`, restituiva quindi il 27%
+    # invece dell'82% documentato e presente nei dati caricati su BigQuery.
+    # Nessun controllo se ne accorgeva: il dataset si generava, i controlli di
+    # qualita' passavano, l'SQL girava. Solo la conclusione era falsa.
     churned = rng.random(n) < CHURN_RATE
-    churn = pd.Series(pd.NaT, index=range(n))
-    # churned users leave at some point after signup; others get a future date
+
+    # Chi abbandona lo fa entro la finestra di analisi; chi resta riceve una data
+    # oltre l'anno — come nel dataset caricato, dove churn_date e' valorizzata per
+    # tutti ma solo il 17,7% cade entro il 2024.
     offset = rng.integers(30, 400, n)
-    churn = signup + pd.to_timedelta(offset, "D")
+    churn = (signup + pd.to_timedelta(offset, "D")).to_numpy()
+    year_end = np.datetime64(f"{YEAR}-12-31")
+    next_year = np.datetime64(f"{YEAR + 1}-01-15")
+
+    churn = np.where(
+        churned,
+        np.minimum(churn, year_end),                                  # abbandona: dentro l'anno
+        np.maximum(churn, next_year) + rng.integers(0, 300, n).astype("timedelta64[D]"),
+    )
+    churn = pd.DatetimeIndex(churn)
+
     return pd.DataFrame({
         "user_id": range(1, n + 1),
         "country": rng.choice(COUNTRIES, n),

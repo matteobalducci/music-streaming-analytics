@@ -118,13 +118,40 @@ def build_tracks(n, rng):
     })
 
 
-def build_streams(n_users, tracks, time_dim, churned, rng):
+def build_streams(n_users, tracks, time_dim, churned, signup, churn_dates, rng):
     days = pd.to_datetime(time_dim["time_key"])
     w = days.dt.month.map(MONTH_MULT).to_numpy(dtype=float, copy=True)
     w *= np.where(days.dt.dayofweek >= 5, WEEKEND_LIFT, 1.0)
     w /= w.sum()
 
     total = n_users * STREAMS_PER_USER
+
+    # FIX 2026-09-03: `churned` era il terzo parametro morto di questo file —
+    # arrivava nella firma e non veniva mai usato, quindi gli stream si
+    # distribuivano uniformemente su TUTTI gli utenti e ognuno ne riceveva
+    # almeno uno. Il KPI "attivi / iscritti" leggeva quindi il 100%.
+    #
+    # Q4 costruisce il suo argomento proprio su quel numero: «il KPI ingenuo
+    # legge ~97%, ma quella e' portata, non retention». Con il 100% l'esempio
+    # perdeva il suo contrasto piu' netto, e non corrispondeva ai dati caricati
+    # (97,3%). Chi abbandona ascolta meno, e qualcuno non compare affatto.
+    # Il peso di un utente e' la frazione dell'anno in cui e' stato attivo:
+    # chi si iscrive a meta' anno, o chi abbandona a gennaio, ascolta meno. Chi
+    # ha gia' abbandonato prima che l'anno cominci non compare affatto, ed e'
+    # esattamente cosi' che il KPI "attivi / iscritti" scende sotto il 100%.
+    year_start = np.datetime64(f"{YEAR}-01-01")
+    year_end_np = np.datetime64(f"{YEAR}-12-31")
+    span = (year_end_np - year_start).astype(int) + 1
+
+    inizio = np.maximum(signup.to_numpy().astype("datetime64[D]"), year_start)
+    fine = np.minimum(churn_dates.to_numpy().astype("datetime64[D]"), year_end_np)
+    giorni_attivi = np.clip((fine - inizio).astype(int) + 1, 0, span)
+
+    user_weight = giorni_attivi.astype(float)
+    if user_weight.sum() == 0:
+        user_weight = np.ones(n_users)
+    user_weight = user_weight / user_weight.sum()
+
     day_idx = rng.choice(len(days), total, p=w)
     listen_date = days.dt.strftime("%Y-%m-%d").to_numpy()[day_idx]
     listen_hour = rng.choice(24, total, p=HOUR_W / HOUR_W.sum())
@@ -150,7 +177,7 @@ def build_streams(n_users, tracks, time_dim, churned, rng):
 
     revenue = rng.uniform(0.002, 0.009, total).round(5)
     return pd.DataFrame({
-        "user_id": rng.integers(1, n_users + 1, total),
+        "user_id": rng.choice(np.arange(1, n_users + 1), total, p=user_weight),
         "track_id": track_id,
         "platform_id": rng.integers(1, 5, total),
         "listen_date": listen_date,
@@ -181,7 +208,9 @@ def main():
     time_dim = build_time(YEAR, rng)
     users, churned = build_users(args.users, rng)
     tracks = build_tracks(args.tracks, rng)
-    streams = build_streams(args.users, tracks, time_dim, churned, rng)
+    streams = build_streams(args.users, tracks, time_dim, churned,
+                            pd.to_datetime(users['signup_date']),
+                            pd.to_datetime(users['churn_date']), rng)
 
     platform.to_csv(os.path.join(args.out, "D_Platform.csv"), index=False)
     time_dim.to_csv(os.path.join(args.out, "D_Time.csv"), index=False)

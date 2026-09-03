@@ -205,3 +205,81 @@ def test_free_is_the_largest_single_segment(users):
     conversione» — se smette di esserlo, la conclusione va riscritta."""
     mix = users.subscription_plan.value_counts()
     assert mix.idxmax() == "Free"
+
+
+# --- portata contro retention, stagionalita', e un risultato negativo -----
+
+
+@pytest.fixture(scope="module")
+def both(tmp_path_factory):
+    out = tmp_path_factory.mktemp("both")
+    subprocess.run(
+        [sys.executable, os.path.join(ROOT, "scripts", "generate_datasets.py"),
+         "--out", str(out), "--users", "20000", "--seed", "42"],
+        check=True, capture_output=True,
+    )
+    return (pd.read_csv(out / "F_Streams.csv"),
+            pd.read_csv(out / "D_Users.csv"),
+            pd.read_csv(out / "D_Tracks.csv"))
+
+
+def test_the_naive_kpi_reads_near_100_percent(both):
+    """Q4 poggia sul contrasto fra il KPI ingenuo e la retention vera. Se ogni
+    utente ha almeno uno stream il KPI legge 100% e il contrasto sparisce —
+    ed e' quello che succedeva quando `churned` non veniva passato a
+    build_streams. Chi abbandona presto non deve comparire affatto.
+    """
+    streams, users, _ = both
+    naive = streams.user_id.nunique() / len(users) * 100
+    assert 96 <= naive <= 99.5, f"KPI ingenuo {naive:.1f}%, atteso ~99%"
+
+
+def test_the_gap_between_reach_and_retention_is_the_finding(both):
+    """Il numero che conta non e' il KPI ne' la retention, ma la distanza fra i
+    due: e' l'intero argomento della Q4."""
+    streams, users, _ = both
+    naive = streams.user_id.nunique() / len(users) * 100
+    real = (pd.to_datetime(users.churn_date) > "2024-12-31").mean() * 100
+    assert naive - real > 12, (
+        f"lo scarto e' sceso a {naive - real:.1f}pp: senza distanza fra portata e "
+        f"retention la Q4 non dimostra piu' niente"
+    )
+
+
+def test_summer_and_december_peak_and_february_troughs(both):
+    streams, _, _ = both
+    per_mese = streams.assign(m=pd.to_datetime(streams.listen_date).dt.month).groupby("m").size()
+    indice = per_mese / per_mese.mean() * 100
+    assert indice[[6, 7, 8]].mean() > 110, "il picco estivo e' sparito"
+    assert indice[12] > 105, "il picco di dicembre e' sparito"
+    assert indice.idxmin() == 2, "il minimo non e' piu' febbraio"
+
+
+def test_weekends_carry_about_a_quarter_more_streams(both):
+    streams, _, _ = both
+    d = pd.to_datetime(streams.listen_date)
+    per_giorno = streams.groupby([d.dt.date, (d.dt.dayofweek >= 5).values]).size()
+    per_giorno.index.names = ["data", "weekend"]
+    per_giorno = per_giorno.reset_index(name="n")
+    lift = (per_giorno[per_giorno.weekend].n.mean()
+            / per_giorno[~per_giorno.weekend].n.mean() - 1) * 100
+    assert 20 <= lift <= 32, f"lift weekend {lift:.1f}%, atteso ~26%"
+
+
+def test_genre_completion_stays_inside_noise(both):
+    """Q6 e' un risultato NEGATIVO e va tenuto tale.
+
+    Il generatore ricava la probabilita' di skip da sorgente e dispositivo, mai
+    dal genere: la completion per genere e' quindi identica per costruzione e
+    ogni riordino e' rumore campionario. Se qualcuno introduce un effetto di
+    genere, questo test fallisce e la Q6 va riscritta come risultato positivo —
+    invece di restare una conclusione che i dati non sostengono.
+    """
+    streams, _, tracks = both
+    m = streams.merge(tracks[["track_id", "main_genre"]], on="track_id")
+    completion = m.groupby("main_genre").is_skipped.mean()
+    spread = (completion.max() - completion.min()) * 100
+    assert spread < 3.0, (
+        f"la completion per genere varia di {spread:.1f}pp: ora esiste un effetto "
+        f"di genere e la Q6 va riscritta — oggi e' documentata come non-risultato"
+    )

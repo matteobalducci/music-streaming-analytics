@@ -34,15 +34,15 @@ This project treats the dataset as the **digital twin of a streaming platform** 
 
 ## 4. Are we keeping users? (Retention — done right)
 
-**Finding:** A naïve `active / signed-up` KPI reads ~97% — but that is **reach, not retention**. Using `churn_date`, **17.7%** of users churn within the year → **real retention ≈ 82%**, and month-over-month retention sits at **88–96%** with a September dip.
+**Finding:** A naïve `active / signed-up` KPI reads **~99%** — but that is **reach, not retention**. Using `churn_date`, **~18%** of users churn within the year → **real retention ≈ 82%**, and month-over-month retention sits at **82–92%** with a September dip.
 
-**So what:** The 97% number would hide a real 18% churn in an executive review. The corrected measure (and the DAX for it) is the difference between a metric that *looks* good and one that *drives* decisions. See Q4.
+**So what:** The 99% number would hide a real 18% churn in an executive review. The corrected measure (and the DAX for it) is the difference between a metric that *looks* good and one that *drives* decisions. See Q4.
 
 ---
 
 ## 5. When do we need capacity and content? (Seasonality)
 
-**Finding:** Listening peaks in **summer** and **December**, with a consistent **weekend lift**.
+**Finding:** Listening peaks in **summer** (+21% vs the yearly average) and **December** (+11%), with February the trough (−22%). Weekend days carry **+26%** more streams than weekdays.
 
 **So what:** Infrastructure capacity and editorial calendars should be pre-loaded ahead of these windows.
 
@@ -50,11 +50,24 @@ This project treats the dataset as the **digital twin of a streaming platform** 
 
 ---
 
-## 6. Volume vs quality by genre
+## 6. Volume vs quality by genre — a negative result
 
-**Finding:** Ranking genres by *completion rate* rather than raw streams reorders the "top performers" — high volume does not equal high engagement.
+**Finding:** Ranking genres by *completion rate* rather than raw streams **does not** reorder them
+meaningfully. Completion sits between **69.8% and 70.2%** across every genre — a 0.4pp spread,
+inside sampling noise on 1.2M events. Sorting by it reshuffles the top three, but the reshuffle is
+random.
 
-**So what:** Editorial support for long-term retention should weight completion and low skip, not just the loudest volume. See Q6.
+**So what:** This is reported because it is the answer, not because it is the answer anyone wanted.
+Genre is **not** where the engagement problem lives: skip rate varies by 20pp across `stream_source`
+and by 5pp across device, and by essentially nothing across genre. Editorial effort aimed at
+"promoting the genres people finish" would be optimising noise. The levers are the recommender
+(Q1) and the mobile experience (Q2).
+
+*A note on the data:* the generator sets skip probability from source and device only, so the
+absence of a genre effect is by construction, not a discovery about music. It is kept here because
+a synthetic dataset should not be read as evidence of something it was never built to contain —
+and `tests/test_headline_metrics.py` now asserts the spread stays inside noise, so the claim cannot
+quietly turn positive.
 
 ---
 

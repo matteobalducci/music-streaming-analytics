@@ -40,11 +40,19 @@ are controlled via Sort-by-Column.
 
 ## Data-verified
 
-Every KPI was checked against the data loaded in BigQuery, which is the dataset the
+Every KPI was checked against the data loaded in BigQuery, which is the dataset this
 `.pbix` was built on: Total Active Users 43,803, Total Streams 1,227,355, Retention Rate
 82.28% at year end, skip rate by device 33/33/28/28/28, and the Key Influencers finding
 `stream_source is Algorithmic → 1.91x` (cross-validated independently by the
 [skip-prediction model](../../streaming-insights-copilot)).
+
+**Those four absolute counts are not reproducible from this repository**, and saying so
+is more useful than quietly leaving them. They come from a version of the generator that
+no longer exists in the source; `make generate` produces 1,215,000 streams, 44,509 active
+users and 82.16% retention. Every *rate* the report is built on — skip by source and
+device, retention, the subscription mix, the seasonal shape — reproduces within 0.3pp and
+is asserted by `tests/test_headline_metrics.py`. The counts differ by ~1%, the findings
+do not.
 
 **Regenerating the data moves these figures slightly.** `make generate` produces 1,215,000
 streams and 44,509 active users against the 1,227,355 and 43,803 loaded — a ~1% difference

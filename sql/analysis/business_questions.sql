@@ -106,8 +106,14 @@ ORDER BY listen_hour;
 -- ---------------------------------------------------------------------
 -- Q8. RETENTION MESE SU MESE
 -- Aggiunta 2026-09-03: docs/business_questions.md citava un intervallo
--- mese-su-mese e un calo a settembre che NESSUNA query calcolava. Un numero
+-- mese-su-mese e un calo stagionale che NESSUNA query calcolava. Un numero
 -- documentato senza query dietro e' un'affermazione, non un risultato.
+--
+-- ATTENZIONE (bug corretto lo stesso giorno): con un INNER JOIN fra il mese
+-- precedente e quello corrente il risultato e' sempre 100%, perche' il join
+-- elimina dal DENOMINATORE proprio gli utenti che non sono tornati — cioe'
+-- l'unica cosa che la retention misura. Il denominatore dev'essere il mese
+-- precedente per intero.
 -- ---------------------------------------------------------------------
 WITH attivi_per_mese AS (
   SELECT DISTINCT
@@ -116,17 +122,17 @@ WITH attivi_per_mese AS (
   FROM `streaming.F_Streams`
 )
 SELECT
-  cur.mese,
+  DATE_ADD(prev.mese, INTERVAL 1 MONTH)                               AS mese,
   COUNT(DISTINCT prev.user_id)                                        AS attivi_mese_prec,
   COUNT(DISTINCT cur.user_id)                                         AS tornati,
   ROUND(COUNT(DISTINCT cur.user_id)
         / NULLIF(COUNT(DISTINCT prev.user_id), 0) * 100, 1)           AS retention_pct
-FROM attivi_per_mese prev
-JOIN attivi_per_mese cur
+FROM attivi_per_mese AS prev
+LEFT JOIN attivi_per_mese AS cur
   ON cur.user_id = prev.user_id
  AND cur.mese = DATE_ADD(prev.mese, INTERVAL 1 MONTH)
-GROUP BY cur.mese
-ORDER BY cur.mese;
+GROUP BY prev.mese
+ORDER BY mese;
 
 
 -- ---------------------------------------------------------------------

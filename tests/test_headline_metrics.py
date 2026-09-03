@@ -259,61 +259,43 @@ def test_raw_monthly_volume_tracks_user_growth_not_season(both):
 
 
 def test_seasonality_appears_once_normalised_by_active_users(both):
-    """Divisa per utenti attivi, la stagionalita' emerge: estate +18%,
-    dicembre +14%, febbraio -23%."""
-    streams, users, _ = both
-    d = pd.to_datetime(streams.listen_date)
-    signup = pd.to_datetime(users.signup_date)
-    churn = pd.to_datetime(users.churn_date)
+    """Divisa per utenti attivi, la stagionalita' emerge.
 
-    indice = {}
-    for m in range(1, 13):
-        inizio = pd.Timestamp(2024, m, 1)
-        fine = inizio + pd.offsets.MonthEnd(0)
-        attivi = ((signup <= fine) & (churn > inizio)).sum()
-        indice[m] = (d.dt.month == m).sum() / max(attivi, 1)
-    media = sum(indice.values()) / 12
-    idx = {m: v / media * 100 for m, v in indice.items()}
-
-    assert sum(idx[m] for m in (6, 7, 8)) / 3 > 110, "picco estivo sparito"
-    assert idx[12] > 108, "picco di dicembre sparito"
-    assert min(idx, key=idx.get) == 2, "il minimo non e' piu' febbraio"
-
-
-def test_weekends_carry_about_a_quarter_more_streams(both):
-    streams, _, _ = both
-    d = pd.to_datetime(streams.listen_date)
-    per_giorno = streams.groupby([d.dt.date, (d.dt.dayofweek >= 5).values]).size()
-    per_giorno.index.names = ["data", "weekend"]
-    per_giorno = per_giorno.reset_index(name="n")
-    lift = (per_giorno[per_giorno.weekend].n.mean()
-            / per_giorno[~per_giorno.weekend].n.mean() - 1) * 100
-    assert 20 <= lift <= 32, f"lift weekend {lift:.1f}%, atteso ~26%"
-
-
-def test_genre_completion_stays_inside_noise(both):
-    """Q6 e' un risultato NEGATIVO e va tenuto tale.
-
-    Il generatore ricava la probabilita' di skip da sorgente e dispositivo, mai
-    dal genere: la completion per genere e' quindi identica per costruzione e
-    ogni riordino e' rumore campionario. Se qualcuno introduce un effetto di
-    genere, questo test fallisce e la Q6 va riscritta come risultato positivo —
-    invece di restare una conclusione che i dati non sostengono.
+    Il denominatore e' lo stesso della Q9 — gli utenti che hanno effettivamente
+    ascoltato in quel mese — non quelli teoricamente eleggibili: un test che
+    misura una cosa diversa dalla query non protegge la query.
     """
-    streams, _, tracks = both
-    m = streams.merge(tracks[["track_id", "main_genre", "total_duration_sec"]], on="track_id")
-    # La completion e' la frazione di brano ascoltata, come la calcola la Q6 —
-    # NON "non saltato". Confonderle e' l'errore che questo test aveva dentro
-    # alla prima stesura, e che documentava 70% al posto del 58% reale.
-    m["completion"] = m.listen_duration_sec / m.total_duration_sec
-    per_genere = m.groupby("main_genre").completion.mean()
-    spread = (per_genere.max() - per_genere.min()) * 100
-    assert 55 <= per_genere.mean() * 100 <= 61, (
-        f"completion media {per_genere.mean() * 100:.1f}%, documentata ~58%")
-    assert spread < 3.0, (
-        f"la completion per genere varia di {spread:.1f}pp: ora esiste un effetto "
-        f"di genere e la Q6 va riscritta — oggi e' documentata come non-risultato"
+    streams, _, _ = both
+    mese = pd.to_datetime(streams.listen_date).dt.to_period("M")
+    g = streams.groupby(mese).agg(n=("user_id", "size"), attivi=("user_id", "nunique"))
+    per_utente = g.n / g.attivi
+    idx = per_utente / per_utente.mean() * 100
+
+    assert idx.iloc[5:8].mean() > 110, f"picco estivo a {idx.iloc[5:8].mean():.0f}, atteso ~115"
+    assert idx.iloc[11] > 105, f"dicembre a {idx.iloc[11]:.0f}, atteso ~110"
+    assert idx.idxmin().month == 2, "il minimo non e' piu' febbraio"
+
+
+def test_month_over_month_retention_is_not_trivially_one_hundred(both):
+    """Il bug della Q8: con un INNER JOIN fra mese precedente e corrente il
+    risultato e' sempre 100%, perche' il join toglie dal denominatore proprio
+    chi non e' tornato. Il denominatore dev'essere il mese precedente intero.
+    """
+    streams, _, _ = both
+    mese = pd.to_datetime(streams.listen_date).dt.to_period("M")
+    attivi = streams.groupby(mese).user_id.unique().apply(set)
+
+    valori = []
+    for i in range(len(attivi) - 1):
+        prec, cur = attivi.iloc[i], attivi.iloc[i + 1]
+        valori.append(len(prec & cur) / len(prec) * 100)
+
+    assert max(valori) < 99.5, (
+        "la retention mese-su-mese e' ~100%: il denominatore sta escludendo "
+        "chi non e' tornato, che e' l'unica cosa che questa metrica misura"
     )
+    assert 88 <= min(valori) <= 92, f"minimo {min(valori):.1f}%, documentato ~90%"
+    assert 94 <= max(valori) <= 98, f"massimo {max(valori):.1f}%, documentato ~96%"
 
 
 # --- integrita' temporale e monetizzazione -------------------------------

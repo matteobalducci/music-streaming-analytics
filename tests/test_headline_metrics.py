@@ -231,7 +231,7 @@ def test_the_naive_kpi_reads_near_100_percent(both):
     """
     streams, users, _ = both
     naive = streams.user_id.nunique() / len(users) * 100
-    assert 96 <= naive <= 99.5, f"KPI ingenuo {naive:.1f}%, atteso ~99%"
+    assert 94 <= naive <= 98, f"KPI ingenuo {naive:.1f}%, atteso ~96%"
 
 
 def test_the_gap_between_reach_and_retention_is_the_finding(both):
@@ -294,8 +294,8 @@ def test_month_over_month_retention_is_not_trivially_one_hundred(both):
         "la retention mese-su-mese e' ~100%: il denominatore sta escludendo "
         "chi non e' tornato, che e' l'unica cosa che questa metrica misura"
     )
-    assert 88 <= min(valori) <= 92, f"minimo {min(valori):.1f}%, documentato ~90%"
-    assert 94 <= max(valori) <= 98, f"massimo {max(valori):.1f}%, documentato ~96%"
+    assert 87 <= min(valori) <= 92, f"minimo {min(valori):.1f}%, documentato ~90%"
+    assert 94 <= max(valori) <= 99, f"massimo {max(valori):.1f}%, documentato ~97%"
 
 
 # --- integrita' temporale e monetizzazione -------------------------------
@@ -339,3 +339,32 @@ def test_royalty_is_only_paid_on_a_real_listen(both):
     streams, _, _ = both
     assert streams[streams.is_skipped == 1].royalty_cost.max() == 0
     assert streams[streams.is_skipped == 0].royalty_cost.min() > 0
+
+
+# --- la curva di retention che la dashboard mostra -----------------------
+
+
+def test_retention_at_april_matches_the_dashboard(users):
+    """La dashboard riporta 92,27% ad aprile e 82,28% a fine anno: due punti
+    della stessa curva. Con un offset di abbandono uniforme aprile leggeva
+    96,3% — il churn dev'essere concentrato all'inizio, come nella realta' e
+    come nei dati caricati."""
+    churn = pd.to_datetime(users.churn_date)
+    aprile = (churn > "2024-04-30").mean() * 100
+    fine = (churn > "2024-12-31").mean() * 100
+    assert 91 <= aprile <= 93.5, f"retention aprile {aprile:.2f}%, dashboard 92,27%"
+    assert 81 <= fine <= 83.5, f"retention fine anno {fine:.2f}%, dashboard 82,28%"
+    assert aprile > fine, "la retention deve calare nel corso dell'anno"
+
+
+def test_churn_is_front_loaded(users):
+    """Chi abbandona lo fa presto: quasi la meta' entro aprile. Una coda piatta
+    significherebbe utenti che se ne vanno a caso, che non e' come si comportano."""
+    churn = pd.to_datetime(users.churn_date)
+    entro_anno = churn <= "2024-12-31"
+    entro_aprile = churn <= "2024-04-30"
+    quota = entro_aprile.sum() / entro_anno.sum() * 100
+    assert 35 <= quota <= 55, (
+        f"solo il {quota:.0f}% degli abbandoni cade entro aprile: la curva non e' "
+        f"piu' concentrata all'inizio"
+    )

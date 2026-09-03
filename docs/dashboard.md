@@ -46,13 +46,40 @@ Every KPI was checked against the data loaded in BigQuery, which is the dataset 
 `stream_source is Algorithmic → 1.91x` (cross-validated independently by the
 [skip-prediction model](../../streaming-insights-copilot)).
 
-**Those four absolute counts are not reproducible from this repository**, and saying so
-is more useful than quietly leaving them. They come from a version of the generator that
-no longer exists in the source; `make generate` produces 1,215,000 streams, 44,509 active
-users and 82.16% retention. Every *rate* the report is built on — skip by source and
-device, retention, the subscription mix, the seasonal shape — reproduces within 0.3pp and
-is asserted by `tests/test_headline_metrics.py`. The counts differ by ~1%, the findings
-do not.
+**Every measure on this report, recomputed from the data the repository generates today:**
+
+| Measure | DAX | Regenerated | In the `.pbix` |
+|---|---|---|---|
+| Total Active Users | `DISTINCTCOUNT(F_Streams[user_id])` | 43,304 | 43,803 |
+| Total Streams | `COUNTROWS(F_Streams)` | 1,215,000 | 1,227,355 |
+| Retention Rate % (year end) | retained / signed-up | **82.16%** | 82.28% |
+| Retention Rate % (April) | same, period end 30 Apr | **92.27%** | 92.27% |
+| Skip Rate % by device | `AVERAGE(is_skipped)` | 32.9 / 32.9 / 28.1 / 28.0 / 28.0 | 33 / 33 / 28 / 28 / 28 |
+| Skip Rate % overall | `AVERAGE(is_skipped)` | **30.0%** | 30.0% |
+| Like Rate % | `AVERAGE(is_liked)` | 14.9% | — |
+| Total Revenue | `SUM(revenue_generated)` | $5,551 | — |
+| RPM | revenue / active × 1000 | $128.14 | $149.19 |
+| Gross Margin % | (revenue − royalty) / revenue | 52.4% | — |
+
+Every **rate** reproduces: retention lands on 92.27% at April and 82.16% at year end against
+the report's 92.27% and 82.28%, and skip by device matches to a tenth of a point. Those are
+what the findings rest on, and `tests/test_headline_metrics.py` asserts them.
+
+Two **counts** differ by ~1% — 1,215,000 streams against 1,227,355 — from a version of the
+generator that no longer exists in the source and cannot be recovered from it. Saying so is
+worth more than leaving it ambiguous.
+
+**RPM and Gross Margin moved on purpose.** `revenue_generated` used to be drawn from one
+uniform distribution regardless of plan, which made the report's own conclusion — that
+Premium drives the paid revenue — unmeasurable in the data behind it. Revenue per stream is
+now set by plan, and royalty is charged only on a stream actually listened to rather than
+skipped. The `.pbix` will show the new figures after a refresh against reloaded data.
+
+**On the scale of the dataset.** 1.2M events over 45,000 users is ~27 streams per user per
+year, and total revenue is therefore in the thousands, not the millions a real platform
+books. The dataset is sized to clone, generate and query on a laptop in under a minute, not
+to model a platform's finances. Every ratio, rate and ranking behaves as it would at full
+scale; the absolute revenue figures are units of account, not a P&L.
 
 **Regenerating the data moves these figures slightly.** `make generate` produces 1,215,000
 streams and 44,509 active users against the 1,227,355 and 43,803 loaded — a ~1% difference

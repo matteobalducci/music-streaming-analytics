@@ -93,7 +93,13 @@ def build_users(n, rng):
     # Chi abbandona lo fa entro la finestra di analisi; chi resta riceve una data
     # oltre l'anno — come nel dataset caricato, dove churn_date e' valorizzata per
     # tutti ma solo il 17,7% cade entro il 2024.
-    offset = rng.integers(30, 400, n)
+    # L'abbandono e' concentrato all'inizio: chi si iscrive e non si affeziona
+    # se ne va nelle prime settimane, non a meta' del secondo anno. Una
+    # distribuzione esponenziale riproduce quella forma — e riproduce anche i
+    # dati caricati, dove il 44% di chi abbandona lo fa entro aprile. Con un
+    # offset uniforme la retention di aprile leggeva 96,3% contro il 92,3%
+    # della dashboard.
+    offset = np.clip(rng.exponential(110, n), 20, 500).astype(int)
     churn = (signup + pd.to_timedelta(offset, "D")).to_numpy()
     year_end = np.datetime64(f"{YEAR}-12-31")
     next_year = np.datetime64(f"{YEAR + 1}-01-15")

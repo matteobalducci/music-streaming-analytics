@@ -34,7 +34,7 @@ This project treats the dataset as the **digital twin of a streaming platform** 
 
 ## 4. Are we keeping users? (Retention — done right)
 
-**Finding:** A naïve `active / signed-up` KPI reads **~99%** — but that is **reach, not retention**. Using `churn_date`, **~18%** of users churn within the year → **real retention ≈ 82%**, and month-over-month retention sits at **90–96%**, lowest in **February** and dipping again in **September** (Q8).
+**Finding:** A naïve `active / signed-up` KPI reads **~96%** — but that is **reach, not retention**. Using `churn_date`, **~18%** of users churn within the year → **real retention ≈ 82%**, and month-over-month retention sits at **90–97%**, lowest in **February** and dipping again in **September** (Q8).
 
 **So what:** The 99% number would hide a real 18% churn in an executive review. The corrected measure (and the DAX for it) is the difference between a metric that *looks* good and one that *drives* decisions. See Q4.
 
@@ -44,8 +44,8 @@ This project treats the dataset as the **digital twin of a streaming platform** 
 
 **Finding:** Raw monthly volume is **not** a seasonality signal — it is dominated by the growing
 user base. August has roughly three times January's streams mostly because it has twice the active
-users. Dividing by active users per month (Q9), the seasonal pattern appears: **summer +15%**,
-**December +10%**, **February −18%** against the yearly average. Weekend days carry **+26%** more
+users. Dividing by active users per month (Q9), the seasonal pattern appears: **summer +16%**,
+**December +11%**, **February −19%** against the yearly average. Weekend days carry **+26%** more
 streams than weekdays (Q10).
 
 **So what:** Infrastructure capacity and editorial calendars should be pre-loaded ahead of these

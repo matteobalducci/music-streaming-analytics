@@ -59,8 +59,9 @@ seasonality would credit summer campaigns for growth that was just accumulated s
 ## 6. Volume vs quality by genre — a negative result
 
 **Finding:** Ranking genres by *completion rate* rather than raw streams **does not** reorder them
-meaningfully. Completion — `listen_duration_sec / total_duration_sec`, as Q6 computes it — sits between
-**57.9% and 58.2%** across every genre: a 0.3pp spread, inside sampling noise on 1.2M events. Sorting by it reshuffles the top three, but the reshuffle is
+meaningfully. Completion — `listen_duration_sec / total_duration_sec`, as Q6 computes it — sits at **~58%**
+for every genre, within a spread of **0.3pp** end to end. On 1.2M events that is sampling
+noise, not a difference. Sorting by it reshuffles the top three, but the reshuffle is
 random.
 
 **So what:** This is reported because it is the answer, not because it is the answer anyone wanted.

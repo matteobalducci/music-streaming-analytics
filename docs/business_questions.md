@@ -36,7 +36,7 @@ This project treats the dataset as the **digital twin of a streaming platform** 
 
 **Finding:** A naïve `active / signed-up` KPI reads **~96%** — but that is **reach, not retention**. Using `churn_date`, **~18%** of users churn within the year → **real retention ≈ 82%**, and month-over-month retention sits at **90–97%**, lowest in **February** and dipping again in **September** (Q8).
 
-**So what:** The 99% number would hide a real 18% churn in an executive review. The corrected measure (and the DAX for it) is the difference between a metric that *looks* good and one that *drives* decisions. See Q4.
+**So what:** The 96% number would hide a real 18% churn in an executive review. The corrected measure (and the DAX for it) is the difference between a metric that *looks* good and one that *drives* decisions. See Q4.
 
 ---
 

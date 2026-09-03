@@ -48,7 +48,7 @@ Every KPI was checked against the data loaded in BigQuery, which is the dataset 
 
 **Every measure on this report, recomputed from the data the repository generates today:**
 
-| Measure | DAX | Regenerated | In the `.pbix` |
+| Measure | DAX | **Regenerated (authoritative)** | In the shipped `.pbix` |
 |---|---|---|---|
 | Total Active Users | `DISTINCTCOUNT(F_Streams[user_id])` | 43,304 | 43,803 |
 | Total Streams | `COUNTROWS(F_Streams)` | 1,215,000 | 1,227,355 |
@@ -57,7 +57,7 @@ Every KPI was checked against the data loaded in BigQuery, which is the dataset 
 | Skip Rate % by device | `AVERAGE(is_skipped)` | 32.9 / 32.9 / 28.1 / 28.0 / 28.0 | 33 / 33 / 28 / 28 / 28 |
 | Skip Rate % overall | `AVERAGE(is_skipped)` | **30.0%** | 30.0% |
 | Like Rate % | `AVERAGE(is_liked)` | 14.9% | — |
-| Total Revenue | `SUM(revenue_generated)` | $5,551 | — |
+| Total Revenue | `SUM(revenue_generated)` | $5,549 | — |
 | RPM | revenue / active × 1000 | $128.14 | $149.19 |
 | Gross Margin % | (revenue − royalty) / revenue | 52.4% | — |
 
@@ -65,9 +65,13 @@ Every **rate** reproduces: retention lands on 92.27% at April and 82.16% at year
 the report's 92.27% and 82.28%, and skip by device matches to a tenth of a point. Those are
 what the findings rest on, and `tests/test_headline_metrics.py` asserts them.
 
-Two **counts** differ by ~1% — 1,215,000 streams against 1,227,355 — from a version of the
-generator that no longer exists in the source and cannot be recovered from it. Saying so is
-worth more than leaving it ambiguous.
+**The regenerated column is the authoritative one.** The `.pbix` in this repository still holds
+a cached load of an earlier dataset, so its counts read 1,227,355 and 43,803 against the
+1,215,000 and 43,304 the code produces today — a ~1% gap from a generator version that no
+longer exists in the source and cannot be recovered from it. Opening the report and refreshing
+it against reloaded data replaces every cached figure with the ones in the middle column.
+Until someone does that, the shipped file shows the old counts, and this table is the record
+of both.
 
 **RPM and Gross Margin moved on purpose.** `revenue_generated` used to be drawn from one
 uniform distribution regardless of plan, which made the report's own conclusion — that
@@ -82,7 +86,7 @@ to model a platform's finances. Every ratio, rate and ranking behaves as it woul
 scale; the absolute revenue figures are units of account, not a P&L.
 
 **Regenerating the data moves these figures slightly.** `make generate` produces 1,215,000
-streams and 44,509 active users against the 1,227,355 and 43,803 loaded — a ~1% difference
+streams and 43,304 active users against the 1,227,355 and 43,803 loaded — a ~1% difference
 from an earlier version of the generator that is not recoverable from the current source.
 The distributions match within 0.3pp, so every skip rate, retention figure and ranking on
 the report is unchanged.
@@ -92,7 +96,7 @@ to be drawn from the same uniform distribution for every stream regardless of pl
 made the report's own conclusion — that Premium drives the paid revenue — unmeasurable in
 the data behind it. Revenue per stream is now set by plan (Premium Individual ~0.0079 against
 Free ~0.0018) and royalty is charged only on a stream that was actually listened to rather
-than skipped. RPM therefore reads **$124.72** on regenerated data against $149.19 in the
+than skipped. RPM therefore reads **$128.14** on regenerated data against $149.19 in the
 `.pbix`, and Gross Margin **52.4%** against the flat 32% implied by a royalty applied to
 every row. The new figures are the ones the finding rests on; the `.pbix` will show them
 after a refresh against reloaded data.

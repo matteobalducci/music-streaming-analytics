@@ -174,19 +174,19 @@ def test_retention_matches_the_documented_figure(users):
     )
 
 
-def test_churn_rate_tracks_the_configured_constant(users):
-    """CHURN_RATE e' 0.18 e la documentazione cita 17,7%: devono coincidere."""
-    from importlib import util
-    spec = util.spec_from_file_location(
-        "gen", os.path.join(ROOT, "scripts", "generate_datasets.py"))
-    gen = util.module_from_spec(spec)
-    spec.loader.exec_module(gen)
+def test_churn_rate_matches_the_documented_figure(users):
+    """~18%, come dice la documentazione.
 
+    La prima stesura confrontava il churn prodotto con `CHURN_RATE` letto dal
+    generatore stesso: una tautologia. Cambiare la costante avrebbe lasciato il
+    test verde mentre la documentazione diventava falsa. Qui il valore atteso e'
+    scritto a mano, perche' e' quello pubblicato.
+    """
     churn = pd.to_datetime(users.churn_date)
-    realised = (churn <= "2024-12-31").mean()
-    assert abs(realised - gen.CHURN_RATE) < 0.02, (
-        f"abbandoni reali {realised:.1%} contro CHURN_RATE={gen.CHURN_RATE:.0%}: "
-        f"la costante non governa piu' i dati che produce"
+    realised = (churn <= "2024-12-31").mean() * 100
+    assert 16.5 <= realised <= 19.5, (
+        f"abbandoni {realised:.1f}%, documentato ~18%. Se la modifica e' voluta, "
+        f"aggiorna README.md e docs/business_questions.md nello stesso commit."
     )
 
 

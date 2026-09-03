@@ -246,13 +246,38 @@ def test_the_gap_between_reach_and_retention_is_the_finding(both):
     )
 
 
-def test_summer_and_december_peak_and_february_troughs(both):
+def test_raw_monthly_volume_tracks_user_growth_not_season(both):
+    """Il volume grezzo NON e' un segnale stagionale: cresce con la base utenti.
+    Documentarlo come stagionalita' attribuirebbe alle campagne estive una
+    crescita che erano solo iscrizioni accumulate."""
     streams, _, _ = both
     per_mese = streams.assign(m=pd.to_datetime(streams.listen_date).dt.month).groupby("m").size()
-    indice = per_mese / per_mese.mean() * 100
-    assert indice[[6, 7, 8]].mean() > 110, "il picco estivo e' sparito"
-    assert indice[12] > 105, "il picco di dicembre e' sparito"
-    assert indice.idxmin() == 2, "il minimo non e' piu' febbraio"
+    assert per_mese[8] > per_mese[1] * 2, (
+        "agosto non ha piu' molti piu' stream di gennaio: la crescita della base "
+        "utenti e' sparita dal modello, e la Q5 va riscritta"
+    )
+
+
+def test_seasonality_appears_once_normalised_by_active_users(both):
+    """Divisa per utenti attivi, la stagionalita' emerge: estate +18%,
+    dicembre +14%, febbraio -23%."""
+    streams, users, _ = both
+    d = pd.to_datetime(streams.listen_date)
+    signup = pd.to_datetime(users.signup_date)
+    churn = pd.to_datetime(users.churn_date)
+
+    indice = {}
+    for m in range(1, 13):
+        inizio = pd.Timestamp(2024, m, 1)
+        fine = inizio + pd.offsets.MonthEnd(0)
+        attivi = ((signup <= fine) & (churn > inizio)).sum()
+        indice[m] = (d.dt.month == m).sum() / max(attivi, 1)
+    media = sum(indice.values()) / 12
+    idx = {m: v / media * 100 for m, v in indice.items()}
+
+    assert sum(idx[m] for m in (6, 7, 8)) / 3 > 110, "picco estivo sparito"
+    assert idx[12] > 108, "picco di dicembre sparito"
+    assert min(idx, key=idx.get) == 2, "il minimo non e' piu' febbraio"
 
 
 def test_weekends_carry_about_a_quarter_more_streams(both):
@@ -276,10 +301,59 @@ def test_genre_completion_stays_inside_noise(both):
     invece di restare una conclusione che i dati non sostengono.
     """
     streams, _, tracks = both
-    m = streams.merge(tracks[["track_id", "main_genre"]], on="track_id")
-    completion = m.groupby("main_genre").is_skipped.mean()
-    spread = (completion.max() - completion.min()) * 100
+    m = streams.merge(tracks[["track_id", "main_genre", "total_duration_sec"]], on="track_id")
+    # La completion e' la frazione di brano ascoltata, come la calcola la Q6 —
+    # NON "non saltato". Confonderle e' l'errore che questo test aveva dentro
+    # alla prima stesura, e che documentava 70% al posto del 58% reale.
+    m["completion"] = m.listen_duration_sec / m.total_duration_sec
+    per_genere = m.groupby("main_genre").completion.mean()
+    spread = (per_genere.max() - per_genere.min()) * 100
+    assert 55 <= per_genere.mean() * 100 <= 61, (
+        f"completion media {per_genere.mean() * 100:.1f}%, documentata ~58%")
     assert spread < 3.0, (
         f"la completion per genere varia di {spread:.1f}pp: ora esiste un effetto "
         f"di genere e la Q6 va riscritta — oggi e' documentata come non-risultato"
     )
+
+
+# --- integrita' temporale e monetizzazione -------------------------------
+
+
+def test_no_stream_happens_outside_the_users_lifetime(both):
+    """Una tabella dei fatti in cui un evento precede l'esistenza dell'utente
+    non e' difendibile, e rende inaffidabile ogni analisi temporale — comprese
+    la retention e la stagionalita' che questo progetto documenta.
+
+    Prima del 2026-09-03 il 13,7% degli stream precedeva l'iscrizione e il 2,4%
+    seguiva l'abbandono: le date venivano estratte globalmente e l'utente
+    assegnato dopo, in modo indipendente.
+    """
+    streams, users, _ = both
+    m = streams.merge(users[["user_id", "signup_date", "churn_date"]], on="user_id")
+    d = pd.to_datetime(m.listen_date)
+    prima = (d < pd.to_datetime(m.signup_date)).mean() * 100
+    dopo = (d >= pd.to_datetime(m.churn_date)).mean() * 100
+    assert prima == 0, f"{prima:.2f}% degli stream precede l'iscrizione dell'utente"
+    assert dopo == 0, f"{dopo:.2f}% degli stream avviene dopo l'abbandono"
+
+
+def test_revenue_actually_depends_on_the_plan(both):
+    """La conclusione «i piani Premium guidano i ricavi» dev'essere misurabile.
+    Fino al 2026-09-03 revenue_generated veniva estratto dalla stessa uniforme
+    per tutti, quindi quella frase non poggiava su nulla."""
+    streams, users, _ = both
+    m = streams.merge(users[["user_id", "subscription_plan"]], on="user_id")
+    per_stream = m.groupby("subscription_plan").revenue_generated.mean()
+    assert per_stream["Premium Individual"] > per_stream["Free"] * 3, (
+        "il Premium non rende piu' del Free per stream: la Q3 non dimostra niente"
+    )
+    quota = m.groupby("subscription_plan").revenue_generated.sum()
+    premium = quota[quota.index != "Free"].sum() / quota.sum() * 100
+    assert 78 <= premium <= 86, f"quota ricavi Premium {premium:.1f}%, documentata ~82%"
+
+
+def test_royalty_is_only_paid_on_a_real_listen(both):
+    """Non si pagano diritti su un brano saltato dopo due secondi."""
+    streams, _, _ = both
+    assert streams[streams.is_skipped == 1].royalty_cost.max() == 0
+    assert streams[streams.is_skipped == 0].royalty_cost.min() > 0

@@ -48,6 +48,18 @@ STREAMS_PER_USER = 27
 MONTH_MULT = {1: .85, 2: .82, 3: .9, 4: .95, 5: 1.0, 6: 1.15,
               7: 1.25, 8: 1.2, 9: .95, 10: .95, 11: .95, 12: 1.1}  # summer + Dec lift
 WEEKEND_LIFT = 1.25
+
+# Ricavo medio per stream, per piano. Il Free monetizza con la pubblicita' —
+# pochi millesimi per ascolto; i piani Premium ripartiscono l'abbonamento sugli
+# ascolti del mese, quindi rendono molto di piu' per stream. Senza questa
+# differenza la Q3 non puo' dire nulla su quale piano genera i ricavi.
+REVENUE_PER_STREAM = {
+    "Free": 0.0018,
+    "Premium Student": 0.0052,
+    "Premium Family": 0.0061,
+    "Premium Individual": 0.0079,
+}
+ROYALTY_SHARE = 0.68   # quota del ricavo che va alle etichette
 # Listening hour is close to uniform in the analysed dataset (no circadian dip) —
 # match that rather than inventing a pattern the real data doesn't show.
 HOUR_W = np.ones(24)
@@ -118,7 +130,8 @@ def build_tracks(n, rng):
     })
 
 
-def build_streams(n_users, tracks, time_dim, churned, signup, churn_dates, rng):
+def build_streams(n_users, tracks, time_dim, churned, signup, churn_dates,
+                  plans_by_user, rng):
     days = pd.to_datetime(time_dim["time_key"])
     w = days.dt.month.map(MONTH_MULT).to_numpy(dtype=float, copy=True)
     w *= np.where(days.dt.dayofweek >= 5, WEEKEND_LIFT, 1.0)
@@ -144,7 +157,10 @@ def build_streams(n_users, tracks, time_dim, churned, signup, churn_dates, rng):
     span = (year_end_np - year_start).astype(int) + 1
 
     inizio = np.maximum(signup.to_numpy().astype("datetime64[D]"), year_start)
-    fine = np.minimum(churn_dates.to_numpy().astype("datetime64[D]"), year_end_np)
+    # Il giorno dell'abbandono e' il primo giorno NON piu' attivo: la finestra
+    # si chiude il giorno prima, cosi' nessuno stream cade su o dopo il churn.
+    fine = np.minimum(churn_dates.to_numpy().astype("datetime64[D]")
+                      - np.timedelta64(1, "D"), year_end_np)
     giorni_attivi = np.clip((fine - inizio).astype(int) + 1, 0, span)
 
     user_weight = giorni_attivi.astype(float)
@@ -152,7 +168,40 @@ def build_streams(n_users, tracks, time_dim, churned, signup, churn_dates, rng):
         user_weight = np.ones(n_users)
     user_weight = user_weight / user_weight.sum()
 
+    # L'utente si sceglie PRIMA della data, perche' la data deve cadere nella
+    # sua finestra di attivita'.
+    #
+    # FIX 2026-09-03: prima le date venivano estratte globalmente e l'utente
+    # assegnato dopo, in modo indipendente. Il risultato era che il 13,7% degli
+    # stream precedeva l'iscrizione dell'utente e il 2,4% avveniva dopo il suo
+    # abbandono. Una tabella dei fatti in cui un evento precede l'esistenza
+    # dell'utente non e' difendibile, e rende inaffidabile qualsiasi analisi
+    # temporale — comprese proprio la retention e la stagionalita' che il
+    # progetto documenta.
+    user_idx = rng.choice(n_users, total, p=user_weight)
+
+    # Finestra ammessa per ciascuno stream, in indici di giorno dell'anno.
+    primo = np.searchsorted(days.to_numpy(), inizio.astype("datetime64[ns]"))
+    ultimo = np.searchsorted(days.to_numpy(), fine.astype("datetime64[ns]"))
+    lo, hi = primo[user_idx], np.maximum(ultimo[user_idx], primo[user_idx])
+
+    # Si estrae dalla distribuzione stagionale e si ripesca solo cio' che cade
+    # fuori finestra: dopo pochi giri restano pochissimi casi, che si assegnano
+    # uniformemente dentro la finestra. Cosi' la stagionalita' resta intatta per
+    # la stragrande maggioranza degli eventi senza costruire una distribuzione
+    # separata per ognuno dei 45.000 utenti.
     day_idx = rng.choice(len(days), total, p=w)
+    for _ in range(12):
+        fuori = (day_idx < lo) | (day_idx > hi)
+        if not fuori.any():
+            break
+        day_idx[fuori] = rng.choice(len(days), int(fuori.sum()), p=w)
+    fuori = (day_idx < lo) | (day_idx > hi)
+    if fuori.any():
+        day_idx[fuori] = lo[fuori] + (rng.random(int(fuori.sum()))
+                                      * (hi[fuori] - lo[fuori] + 1)).astype(int)
+    day_idx = np.clip(day_idx, lo, hi)
+
     listen_date = days.dt.strftime("%Y-%m-%d").to_numpy()[day_idx]
     listen_hour = rng.choice(24, total, p=HOUR_W / HOUR_W.sum())
 
@@ -175,9 +224,20 @@ def build_streams(n_users, tracks, time_dim, churned, signup, churn_dates, rng):
                           (rng.uniform(2, 30, total)).astype(int),
                           (full * rng.uniform(0.6, 1.0, total)).astype(int))
 
-    revenue = rng.uniform(0.002, 0.009, total).round(5)
+    # FIX 2026-09-03: `revenue_generated` era estratto dalla stessa uniforme per
+    # tutti, indipendentemente dal piano — quindi la conclusione «i piani Premium
+    # guidano i ricavi» non era misurabile sui dati, e la Q3 sommava lo stesso
+    # ricavo anche agli utenti Free. Ora il ricavo per stream dipende dal piano:
+    # il Free monetizza con la pubblicita' (poco per stream), il Premium con
+    # l'abbonamento ripartito sugli ascolti.
+    piano_utente = plans_by_user[user_idx]
+    base = np.vectorize(REVENUE_PER_STREAM.get)(piano_utente)
+    revenue = (base * rng.uniform(0.75, 1.25, total)).round(5)
+
+    # Il costo di royalty si paga solo su un ascolto vero, non su uno skip.
+    royalty = np.where(is_skipped, 0.0, revenue * ROYALTY_SHARE).round(5)
     return pd.DataFrame({
-        "user_id": rng.choice(np.arange(1, n_users + 1), total, p=user_weight),
+        "user_id": user_idx + 1,
         "track_id": track_id,
         "platform_id": rng.integers(1, 5, total),
         "listen_date": listen_date,
@@ -188,7 +248,7 @@ def build_streams(n_users, tracks, time_dim, churned, signup, churn_dates, rng):
         "is_skipped": is_skipped,
         "is_liked": is_liked,
         "listen_duration_sec": listen_dur,
-        "royalty_cost": (revenue * 0.68).round(5),
+        "royalty_cost": royalty,
         "revenue_generated": revenue,
     })
 
@@ -210,7 +270,8 @@ def main():
     tracks = build_tracks(args.tracks, rng)
     streams = build_streams(args.users, tracks, time_dim, churned,
                             pd.to_datetime(users['signup_date']),
-                            pd.to_datetime(users['churn_date']), rng)
+                            pd.to_datetime(users['churn_date']),
+                            users['subscription_plan'].to_numpy(), rng)
 
     platform.to_csv(os.path.join(args.out, "D_Platform.csv"), index=False)
     time_dim.to_csv(os.path.join(args.out, "D_Time.csv"), index=False)

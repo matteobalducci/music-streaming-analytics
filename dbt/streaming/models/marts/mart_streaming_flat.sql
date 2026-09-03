@@ -30,6 +30,9 @@ select
     s.is_liked,
     s.listen_duration_sec,
     s.revenue_generated,
+    -- FIX 2026-09-03: royalty_cost veniva perso da fct_streams, quindi dopo
+    -- dbt il Gross Margin documentato nella dashboard non era calcolabile.
+    s.royalty_cost,
     s.completion_ratio,
     s.is_engaged_stream,
     u.country,

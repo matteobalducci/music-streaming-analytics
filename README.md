@@ -40,9 +40,9 @@ CI rather than left to drift.
 |---|---|---|
 | **Discovery Efficiency** | Skip rate by `stream_source` | Algorithmic recommendations skip at **~42%** vs **~22%** for Editorial/Search → the recommender is over-serving mismatched content. |
 | **Device experience** | Skip rate by device | Mobile skips **~33%** vs **~28%** on desktop/speaker → where to invest in UX and on-device recommendations. |
-| **Monetization** | Revenue & RPM by plan | Revenue per 1,000 active users, split Free vs Premium — is growth adding value or low-value users? |
+| **Monetization** | Revenue & RPM by plan | Premium is 55% of users but **82%** of revenue; Free monetises at ~a quarter the rate per stream. |
 | **Retention / churn** | Users still active vs churned | Real retention from `churn_date` is **~82%** (18% churn) — *not* the **~99%** "% who ever listened" a naïve KPI reports. |
-| **Seasonality** | Monthly / weekend cycles | Summer (+21%) and December (+11%) peaks, February trough (−22%), weekends +26%. |
+| **Seasonality** | Monthly / weekend cycles | Raw volume tracks user growth, not season. Per active user: summer **+18%**, December **+14%**, February **−23%**, weekends **+26%**. |
 
 Full analytical narrative → [`docs/business_questions.md`](docs/business_questions.md)
 

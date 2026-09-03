@@ -26,7 +26,7 @@ This project treats the dataset as the **digital twin of a streaming platform** 
 
 ## 3. Where does the money come from? (Monetization)
 
-**Finding:** Revenue and **RPM (revenue per 1,000 active users)** split by plan. Premium tiers (55% of active users) drive the paid revenue; Free (45%) is the conversion opportunity.
+**Finding:** Premium tiers are **55%** of users but **82%** of revenue; Free is **45%** of users and **18%** of revenue. Revenue per stream runs **~0.0079** for Premium Individual against **~0.0018** for Free — the ad-funded tier monetises at roughly a quarter of the subscription tiers.
 
 **So what:** Growing users without growing RPM would signal low-value acquisition. Tracking both together keeps volume and monetization honest. See `sql/analysis/business_questions.sql` Q3.
 
@@ -34,7 +34,7 @@ This project treats the dataset as the **digital twin of a streaming platform** 
 
 ## 4. Are we keeping users? (Retention — done right)
 
-**Finding:** A naïve `active / signed-up` KPI reads **~99%** — but that is **reach, not retention**. Using `churn_date`, **~18%** of users churn within the year → **real retention ≈ 82%**, and month-over-month retention sits at **82–92%** with a September dip.
+**Finding:** A naïve `active / signed-up` KPI reads **~99%** — but that is **reach, not retention**. Using `churn_date`, **~18%** of users churn within the year → **real retention ≈ 82%**, and month-over-month retention sits at **82–92%** with a September dip (Q8).
 
 **So what:** The 99% number would hide a real 18% churn in an executive review. The corrected measure (and the DAX for it) is the difference between a metric that *looks* good and one that *drives* decisions. See Q4.
 
@@ -42,9 +42,15 @@ This project treats the dataset as the **digital twin of a streaming platform** 
 
 ## 5. When do we need capacity and content? (Seasonality)
 
-**Finding:** Listening peaks in **summer** (+21% vs the yearly average) and **December** (+11%), with February the trough (−22%). Weekend days carry **+26%** more streams than weekdays.
+**Finding:** Raw monthly volume is **not** a seasonality signal — it is dominated by the growing
+user base. August has roughly three times January's streams mostly because it has twice the active
+users. Dividing by active users per month (Q9), the seasonal pattern appears: **summer +18%**,
+**December +14%**, **February −23%** against the yearly average. Weekend days carry **+26%** more
+streams than weekdays (Q10).
 
-**So what:** Infrastructure capacity and editorial calendars should be pre-loaded ahead of these windows.
+**So what:** Infrastructure capacity and editorial calendars should be pre-loaded ahead of these
+windows — but the normalisation matters more than the finding. Reading raw monthly volume as
+seasonality would credit summer campaigns for growth that was just accumulated signups.
 
 ![seasonality](screenshots/monthly_seasonality.png)
 
@@ -53,8 +59,8 @@ This project treats the dataset as the **digital twin of a streaming platform** 
 ## 6. Volume vs quality by genre — a negative result
 
 **Finding:** Ranking genres by *completion rate* rather than raw streams **does not** reorder them
-meaningfully. Completion sits between **69.8% and 70.2%** across every genre — a 0.4pp spread,
-inside sampling noise on 1.2M events. Sorting by it reshuffles the top three, but the reshuffle is
+meaningfully. Completion — `listen_duration_sec / total_duration_sec`, as Q6 computes it — sits between
+**57.9% and 58.2%** across every genre: a 0.3pp spread, inside sampling noise on 1.2M events. Sorting by it reshuffles the top three, but the reshuffle is
 random.
 
 **So what:** This is reported because it is the answer, not because it is the answer anyone wanted.

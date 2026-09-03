@@ -2,7 +2,16 @@
 
 The report ([`dashboard/Music_Stream_Dashboard.pbix`](../dashboard/Music_Stream_Dashboard.pbix))
 is built on a Power BI data model with **5 tables**: `F_Streams` (fact) plus
-`D_Users`, `D_Tracks`, `D_Platform`, `D_Time`. *Auto Date/Time is disabled* in
+`D_Users`, `D_Tracks`, `D_Platform`, `D_Time`.
+
+**Which layer the report reads, and why.** It connects to the raw star schema that
+`scripts/load_bigquery.py` lands in BigQuery — `F_Streams` and the four dimensions —
+not to the dbt marts. Power BI models a star natively and computes its measures in
+DAX, so routing it through `mart_streaming_flat` (built for tools that flatten a star
+badly, such as Looker Studio) would denormalise data the report is happier modelling
+itself. The dbt layer is the tested, typed path used for SQL analysis and for any
+downstream tool that needs one wide table; both read the same loaded data. The README's
+lineage diagram shows the full pipeline, of which the report uses the left-hand branch. *Auto Date/Time is disabled* in
 favour of an explicit `D_Time` calendar, so month ordering and time hierarchies
 are controlled via Sort-by-Column.
 
@@ -31,13 +40,27 @@ are controlled via Sort-by-Column.
 
 ## Data-verified
 
-Every KPI on the dashboard has been checked against the source data and matches exactly:
-Total Active Users (43,803 ≈ 44K), Total Streams (1,227,355), RPM ($149.19), Retention Rate
-(82.28% at year end, 92.27% in April), skip rate by device (33%/33%/28%/28%/28%), revenue
-by subscription plan, and the Key Influencers `stream_source is Algorithmic → 1.91x` finding
-(cross-validated independently by the [skip-prediction model](../../streaming-insights-copilot)
-in the companion Copilot project, which finds `stream_source` the dominant predictor via
-permutation importance).
+Every KPI was checked against the data loaded in BigQuery, which is the dataset the
+`.pbix` was built on: Total Active Users 43,803, Total Streams 1,227,355, Retention Rate
+82.28% at year end, skip rate by device 33/33/28/28/28, and the Key Influencers finding
+`stream_source is Algorithmic → 1.91x` (cross-validated independently by the
+[skip-prediction model](../../streaming-insights-copilot)).
+
+**Regenerating the data moves these figures slightly.** `make generate` produces 1,215,000
+streams and 44,509 active users against the 1,227,355 and 43,803 loaded — a ~1% difference
+from an earlier version of the generator that is not recoverable from the current source.
+The distributions match within 0.3pp, so every skip rate, retention figure and ranking on
+the report is unchanged.
+
+**The revenue measures are the exception, and deliberately so.** `revenue_generated` used
+to be drawn from the same uniform distribution for every stream regardless of plan, which
+made the report's own conclusion — that Premium drives the paid revenue — unmeasurable in
+the data behind it. Revenue per stream is now set by plan (Premium Individual ~0.0079 against
+Free ~0.0018) and royalty is charged only on a stream that was actually listened to rather
+than skipped. RPM therefore reads **$124.72** on regenerated data against $149.19 in the
+`.pbix`, and Gross Margin **52.4%** against the flat 32% implied by a royalty applied to
+every row. The new figures are the ones the finding rests on; the `.pbix` will show them
+after a refresh against reloaded data.
 
 ## Known limitation
 

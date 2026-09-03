@@ -101,3 +101,77 @@ SELECT
 FROM `streaming.fct_streams`
 GROUP BY listen_hour
 ORDER BY listen_hour;
+
+
+-- ---------------------------------------------------------------------
+-- Q8. RETENTION MESE SU MESE
+-- Aggiunta 2026-09-03: docs/business_questions.md citava un intervallo
+-- mese-su-mese e un calo a settembre che NESSUNA query calcolava. Un numero
+-- documentato senza query dietro e' un'affermazione, non un risultato.
+-- ---------------------------------------------------------------------
+WITH attivi_per_mese AS (
+  SELECT DISTINCT
+    DATE_TRUNC(listen_date, MONTH) AS mese,
+    user_id
+  FROM `streaming.F_Streams`
+)
+SELECT
+  cur.mese,
+  COUNT(DISTINCT prev.user_id)                                        AS attivi_mese_prec,
+  COUNT(DISTINCT cur.user_id)                                         AS tornati,
+  ROUND(COUNT(DISTINCT cur.user_id)
+        / NULLIF(COUNT(DISTINCT prev.user_id), 0) * 100, 1)           AS retention_pct
+FROM attivi_per_mese prev
+JOIN attivi_per_mese cur
+  ON cur.user_id = prev.user_id
+ AND cur.mese = DATE_ADD(prev.mese, INTERVAL 1 MONTH)
+GROUP BY cur.mese
+ORDER BY cur.mese;
+
+
+-- ---------------------------------------------------------------------
+-- Q9. STAGIONALITA' NORMALIZZATA PER UTENTE ATTIVO
+-- Aggiunta 2026-09-03. Il volume grezzo mensile e' dominato dalla CRESCITA
+-- della base utenti, non dalla stagione: gli stream di agosto sono il triplo
+-- di quelli di gennaio soprattutto perche' ci sono il doppio degli utenti.
+-- La stagionalita' si vede solo dividendo per gli utenti attivi in quel mese.
+-- ---------------------------------------------------------------------
+WITH per_mese AS (
+  SELECT
+    DATE_TRUNC(listen_date, MONTH) AS mese,
+    COUNT(*)                       AS stream,
+    COUNT(DISTINCT user_id)        AS utenti_attivi
+  FROM `streaming.F_Streams`
+  GROUP BY mese
+)
+SELECT
+  mese,
+  stream,
+  utenti_attivi,
+  ROUND(stream / utenti_attivi, 2)                                    AS stream_per_utente,
+  ROUND((stream / utenti_attivi)
+        / AVG(stream / utenti_attivi) OVER () * 100, 0)               AS indice_stagionale
+FROM per_mese
+ORDER BY mese;
+
+
+-- ---------------------------------------------------------------------
+-- Q10. LIFT DEL WEEKEND, PER GIORNO
+-- Aggiunta 2026-09-03: la Q5 restituiva i TOTALI di weekend e giorni feriali,
+-- che non sono confrontabili — un mese ha ~22 giorni feriali e ~9 di weekend.
+-- Il lift richiede la media PER GIORNO.
+-- ---------------------------------------------------------------------
+WITH per_giorno AS (
+  SELECT
+    listen_date,
+    EXTRACT(DAYOFWEEK FROM listen_date) IN (1, 7) AS is_weekend,
+    COUNT(*)                                      AS stream
+  FROM `streaming.F_Streams`
+  GROUP BY listen_date, is_weekend
+)
+SELECT
+  ROUND(AVG(IF(is_weekend, stream, NULL)), 0)                         AS media_weekend,
+  ROUND(AVG(IF(is_weekend, NULL, stream)), 0)                         AS media_feriali,
+  ROUND(AVG(IF(is_weekend, stream, NULL))
+        / AVG(IF(is_weekend, NULL, stream)) * 100 - 100, 1)           AS lift_pct
+FROM per_giorno;

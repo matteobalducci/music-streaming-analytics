@@ -61,13 +61,18 @@ def main():
         ax.text(v + 0.5, b.get_y() + b.get_height() / 2, f"{v:.0f}%", va="center", fontweight="bold")
     bare(ax); plt.tight_layout(); plt.savefig(os.path.join(OUT, "skip_rate_by_device.png")); plt.close()
 
-    # 3. monthly seasonality
-    m = f.groupby("month").size()
+    # 3. monthly seasonality — normalised by active users (matches Q9; raw
+    # volume is dominated by user-base growth, not season, see docs/business_questions.md #5)
+    by_month = f.groupby("month").agg(streams=("user_id", "size"), active_users=("user_id", "nunique"))
+    spu = by_month["streams"] / by_month["active_users"]
+    idx = spu / spu.mean() * 100
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    ax.plot(m.index, m.values, marker="o", color=GREEN, linewidth=2.5)
-    ax.fill_between(m.index, m.values, alpha=0.1, color=GREEN)
-    ax.set_title("Monthly streams — summer & December peaks", fontweight="bold")
-    ax.set_xlabel("Month"); ax.set_ylabel("Streams"); ax.set_xticks(range(1, 13)); ax.set_ylim(bottom=0)
+    ax.plot(idx.index, idx.values, marker="o", color=GREEN, linewidth=2.5)
+    ax.fill_between(idx.index, idx.values, alpha=0.1, color=GREEN)
+    ax.axhline(100, color=GREY, linewidth=1, linestyle="--")
+    ax.set_title("Seasonal index — streams per active user", fontweight="bold")
+    ax.set_xlabel("Month"); ax.set_ylabel("Seasonal index (yearly avg = 100)")
+    ax.set_xticks(range(1, 13))
     bare(ax); plt.tight_layout(); plt.savefig(os.path.join(OUT, "monthly_seasonality.png")); plt.close()
 
     # 4. subscription-plan mix (of active users)

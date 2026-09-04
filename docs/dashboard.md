@@ -11,9 +11,12 @@ DAX, so routing it through `mart_streaming_flat` (built for tools that flatten a
 badly, such as Looker Studio) would denormalise data the report is happier modelling
 itself. The dbt layer is the tested, typed path used for SQL analysis and for any
 downstream tool that needs one wide table; both read the same loaded data. The README's
-lineage diagram shows the full pipeline, of which the report uses the left-hand branch. *Auto Date/Time is disabled* in
-favour of an explicit `D_Time` calendar, so month ordering and time hierarchies
-are controlled via Sort-by-Column.
+lineage diagram shows the full pipeline, of which the report uses the left-hand branch. *Auto Date/Time is disabled*
+on every visual except the Forecast page's `Total Revenue by Year and Quarter` chart: elsewhere,
+month ordering and time hierarchies are controlled via an explicit `D_Time` calendar and
+Sort-by-Column. That one chart uses `time_key`'s auto-generated Date Hierarchy instead, because
+Power BI's native forecast trend lines need a continuous date axis to project along — the same
+constraint that made it the one chart worth putting two forecast transforms on in the first place.
 
 > **Table names differ from the BigQuery names.** The `.pbix` was originally built
 > against the local CSVs, so its internal Power Query table names follow the file
@@ -53,8 +56,11 @@ are controlled via Sort-by-Column.
 Every KPI was checked against the data loaded in BigQuery, which is the dataset this
 `.pbix` was built on: Total Active Users 43,803, Total Streams 1,227,355, Retention Rate
 82.28% at year end, skip rate by device 33/33/28/28/28, and the Key Influencers finding
-`stream_source is Algorithmic → 1.91x` (cross-validated independently by the
-[skip-prediction model](https://github.com/matteobalducci/streaming-insights-copilot)).
+`stream_source is Algorithmic → 1.91x`. The direction of that finding — `stream_source` as the
+dominant driver of skip behaviour — is independently confirmed by a different method on a different
+dataset sample: the [skip-prediction model](https://github.com/matteobalducci/streaming-insights-copilot)
+ranks it far above every other feature by permutation importance. The two don't share a statistic
+(Key Influencers' odds ratio vs. permutation importance), so this confirms the finding, not the 1.91x figure itself.
 
 **Every measure on this report, recomputed from the data the repository generates today:**
 

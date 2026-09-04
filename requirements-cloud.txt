@@ -14,6 +14,15 @@
 # CLI directly and needs none of this file).
 google-cloud-bigquery>=3.11
 
+# Pinned, not just a transitive dependency: google-auth[pyopenssl] (pulled in by
+# google-cloud-bigquery) needs cryptography, and cryptography stopped publishing
+# macOS x86_64 wheels at 49.0.0 (last one with an x86_64-capable wheel: 48.0.1,
+# via a universal2 build). Without this pin, pip resolves the newest release,
+# finds no wheel on an x86_64 Mac, and falls back to a source build that fails
+# outright without a Rust/cargo + OpenSSL toolchain — see
+# docs/gcp_setup_notes.md#3.
+cryptography<49
+
 # scripts/check_dbt_target.py — `make deploy`'s guard that PROJECT/DATASET
 # match the resolved dbt profile before anything loads. Already a transitive
 # dependency of dbt-core; listed explicitly since this script needs it

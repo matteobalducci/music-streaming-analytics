@@ -1,6 +1,6 @@
 # GCP setup notes — things that bit me
 
-Two real snags hit while setting this up on a fresh GCP project, neither obvious from
+Three real snags hit while setting this up on a fresh GCP project, none obvious from
 the error messages. Documented here in case future-me (or anyone else running this)
 hits the same wall.
 
@@ -60,3 +60,30 @@ This makes Python report the real macOS version, so pip picks the prebuilt wheel
 instead of compiling from source. Confirmed: `platform.platform()` went from
 `macOS-10.16-x86_64-i386-64bit` to `macOS-14.5-x86_64-i386-64bit` with the variable
 set, and the same install went from a 20-minute source build to a few seconds.
+
+## 3. `pip install google-cloud-bigquery` fails outright on an x86_64-Python macOS setup
+
+**Symptom:** not a slow build like #2 above — a hard failure. `pip install` tries to
+compile `cryptography` from source and dies with something like
+`Failed to build a native library through cargo … Could not find directory of OpenSSL
+installation`, because a Rust/`cargo` + OpenSSL toolchain isn't installed (and
+shouldn't need to be, for a dependency three levels removed from anything this repo
+does directly).
+
+**Cause:** `google-cloud-bigquery` pulls in `google-auth[pyopenssl]`, which depends on
+`cryptography`. `cryptography` stopped publishing macOS **x86_64** wheels starting at
+**49.0.0** — every release from 49.0.0 on ships only `macosx_11_0_arm64` (Apple
+Silicon). The last release with an x86_64-capable wheel is **48.0.1** (a
+`macosx_10_9_universal2` build, covering both architectures). Left unpinned, pip
+resolves the newest `cryptography` release, finds no wheel for an x86_64 Python on
+macOS — Intel Macs, and Apple Silicon Macs running an x86_64 Python build (e.g. an
+older Anaconda install under Rosetta) both hit this — and falls back to a source
+build that fails without the Rust toolchain. `SYSTEM_VERSION_COMPAT=0` (the fix for
+\#2) does **not** help here: that fixes a wheel-tag *mismatch*, this is a wheel that
+genuinely doesn't exist for this platform at the newer version.
+
+**Fix:** `requirements-cloud.txt` pins `cryptography<49`, so pip resolves 48.0.1 (or
+whichever pre-49 release satisfies everything else) and gets a real wheel instead of
+trying to build from source. Confirmed: without the pin, `pip download --no-deps
+cryptography` on this machine (x86_64 Python) only offers a `.tar.gz`; with the pin,
+it resolves straight to a `macosx_10_9_universal2` wheel.

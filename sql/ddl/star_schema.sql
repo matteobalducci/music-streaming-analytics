@@ -1,13 +1,24 @@
 -- =====================================================================
 -- Star-schema DDL — BigQuery
--- Load the CSVs from data/ into these tables (or use `bq load`).
--- Grain of fct_streams: one row per listening event.
+-- Load the CSVs from data/ into these tables (or use `bq load`, or
+-- scripts/load_bigquery.py/.sh, which create these same tables with the
+-- same schema from Python/bq rather than this file being run directly).
+-- Grain of F_Streams: one row per listening event.
+--
+-- F_Streams here is the RAW landing table — the schema this file, and both
+-- loaders, actually load CSVs into. It is not the same table as dbt's
+-- `fct_streams` mart (dbt/streaming/models/marts/fct_streams.sql), which
+-- reads this table and enriches it with `completion_ratio` and
+-- `is_engaged_stream`. A table literally named `fct_streams` here would
+-- collide with dbt's build target and break `dbt build`'s
+-- {{ source('raw', 'F_Streams') }} resolution, since BigQuery table names
+-- are case-sensitive.
 -- =====================================================================
 
 CREATE SCHEMA IF NOT EXISTS streaming;
 
--- Fact table -----------------------------------------------------------
-CREATE TABLE IF NOT EXISTS streaming.fct_streams (
+-- Fact table (raw landing table dbt reads and enriches) -----------------
+CREATE TABLE IF NOT EXISTS streaming.F_Streams (  -- noqa: CP02
   stream_id           INT64   NOT NULL,   -- grain key: one row = one listen
   user_id             INT64   NOT NULL,   -- FK -> dim_user
   track_id            INT64   NOT NULL,   -- FK -> dim_track

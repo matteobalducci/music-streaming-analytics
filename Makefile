@@ -31,7 +31,7 @@ charts:          ## Regenerate the README charts from the data
 load:            ## Load the star schema into BigQuery (set PROJECT=..., NO_PARTITION=1 on a no-billing project)
 	python scripts/load_bigquery.py --project "$(PROJECT)" --dataset "$(DATASET)" $(if $(NO_PARTITION),--no-partition,)
 
-dbt-deps:        ## Install the dbt packages (needed once before dbt-build)
+dbt-deps:        ## Resolve dbt package dependencies (none currently declared; a no-op until one is added)
 	cd dbt/streaming && dbt deps
 
 dbt-build: dbt-deps  ## Build + test the dbt models

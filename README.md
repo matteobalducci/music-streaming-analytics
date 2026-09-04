@@ -144,7 +144,7 @@ and nothing in the local path above touches BigQuery or dbt.
 ```bash
 gcloud auth application-default login
 make install-dbt      # google-cloud-bigquery + dbt-bigquery, kept out of the local-only install above
-cp dbt/streaming/profiles.example.yml ~/.dbt/profiles.yml   # fill in your project
+mkdir -p ~/.dbt && cp dbt/streaming/profiles.example.yml ~/.dbt/profiles.yml   # fill in your project
 
 make deploy PROJECT=your-gcp-project   # load, then build + test the dbt models
 ```

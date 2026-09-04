@@ -117,7 +117,7 @@ def build_users(n, rng):
         "subscription_plan": rng.choice(PLANS, n, p=PLAN_P),
         "signup_channel": rng.choice(CHANNELS, n),
         "churn_date": churn.strftime("%Y-%m-%d"),
-    }), churned
+    })
 
 
 def build_tracks(n, rng):
@@ -135,7 +135,7 @@ def build_tracks(n, rng):
     })
 
 
-def build_streams(n_users, tracks, time_dim, churned, signup, churn_dates,
+def build_streams(n_users, tracks, time_dim, signup, churn_dates,
                   plans_by_user, rng):
     days = pd.to_datetime(time_dim["time_key"])
     w = days.dt.month.map(MONTH_MULT).to_numpy(dtype=float, copy=True)
@@ -144,19 +144,20 @@ def build_streams(n_users, tracks, time_dim, churned, signup, churn_dates,
 
     total = n_users * STREAMS_PER_USER
 
-    # FIX 2026-09-03: `churned` was this file's dead third parameter — it
-    # arrived in the signature and was never used, so streams were spread
-    # uniformly across ALL users and everyone got at least one. The "active /
-    # signed-up" KPI therefore read 100%.
+    # FIX 2026-09-03: this function used to take a `churned` boolean array
+    # and never use it — streams were spread uniformly across ALL users and
+    # everyone got at least one, so the "active / signed-up" KPI read 100%.
     #
     # Q4 builds its whole argument on that number: "the naive KPI reads
     # ~97%, but that's reach, not retention." At 100% the example lost its
-    # sharpest contrast, and didn't match the loaded data (97.3%). Someone
-    # who churns listens less, and some don't show up at all. A user's
-    # weight is the fraction of the year they were active: someone who
-    # signs up mid-year, or churns in January, listens less. Someone who had
-    # already churned before the year began doesn't show up at all, and
-    # that's exactly how the "active / signed-up" KPI drops below 100%.
+    # sharpest contrast, and didn't match the loaded data (97.3%). The fix
+    # was to derive each user's ACTIVE WINDOW directly from signup_date and
+    # churn_date instead — someone who signs up mid-year, or churns in
+    # January, listens less, and someone who had already churned before the
+    # year began doesn't show up at all. That made `churned` itself
+    # redundant, so it's no longer a parameter here at all — the same
+    # information now flows through `churn_dates`, which this function
+    # already needed for the window.
     year_start = np.datetime64(f"{YEAR}-01-01")
     year_end_np = np.datetime64(f"{YEAR}-12-31")
     span = (year_end_np - year_start).astype(int) + 1
@@ -282,9 +283,9 @@ def main():
 
     platform = build_platform()
     time_dim = build_time(YEAR)
-    users, churned = build_users(args.users, rng)
+    users = build_users(args.users, rng)
     tracks = build_tracks(args.tracks, rng)
-    streams = build_streams(args.users, tracks, time_dim, churned,
+    streams = build_streams(args.users, tracks, time_dim,
                             pd.to_datetime(users['signup_date']),
                             pd.to_datetime(users['churn_date']),
                             users['subscription_plan'].to_numpy(), rng)

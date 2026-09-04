@@ -34,9 +34,9 @@ are controlled via Sort-by-Column.
 
 | # | Page | Contents |
 |---|---|---|
-| 1 | **Growth & Monetization** | 3 KPI cards (Total Active Users, RPM, **Retention Rate %**), `Monthly Active Users Growth` (line), `Premium vs Free Mix` (donut), `Retention Rate Trend` (line, churn-based) |
-| 2 | **Deep Dive & Engagement** | `Streams by Hour of Day` (area, zero-based axis), `Skip Rate %` by device, `Like Rate %` (scatter), `Main Genre` (treemap), map, Country + Genre slicers |
-| 3 | **Forecast & Financials** | 3 KPI cards (Total Revenue, RPM, Gross Margin %), `Total Revenue by Year and Quarter` with native Power BI forecast (short horizon, ~2 quarters ahead — appropriate given only 4 quarters of history), revenue by subscription plan, revenue by country (map) |
+| 1 | **Growth & Monetization** | 3 KPI cards (Total Active Users, RPM, **Retention Rate %**), `Monthly Active Users Growth` (line), `Premium vs Free Mix` (donut), `Retention Rate Trend` (line, churn-based), Month slicer |
+| 2 | **Deep Dive & Engagement** | `Streams by Hour of Day` (area, zero-based axis), `Skip Rate %` by device, `Like Rate %` (scatter, with a native trend line), `Main Genre` (treemap), map, Country + Genre slicers |
+| 3 | **Forecast & Financials** | 3 KPI cards (Total Revenue, RPM, Gross Margin %), `Total Revenue by Year and Quarter` with two native Power BI forecast trends of different lengths layered on the same series, revenue by subscription plan, revenue by country (map) |
 | 4 | **Machine Learning Insights** | `Key Influencers` (explains `is_skipped`, includes `stream_source`) and `Decomposition Tree` — Power BI's built-in ML visuals for driver analysis and executive drill-down |
 
 ## Key measures (DAX)

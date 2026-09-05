@@ -163,6 +163,31 @@ def test_skipped_streams_are_short_and_rarely_liked(streams):
     assert skipped.is_liked.mean() < played.is_liked.mean() / 3
 
 
+@pytest.fixture(scope="module")
+def dimensions(tmp_path_factory):
+    """D_Tracks/D_Platform/D_Time don't scale with --users, so the smallest
+    run that's still fast is enough to check their row counts."""
+    out = tmp_path_factory.mktemp("dimensions")
+    subprocess.run(
+        [sys.executable, os.path.join(ROOT, "scripts", "generate_datasets.py"),
+         "--out", str(out), "--users", "500", "--seed", "42"],
+        check=True, capture_output=True,
+    )
+    return (pd.read_csv(out / "D_Tracks.csv"), pd.read_csv(out / "D_Platform.csv"))
+
+
+def test_dimension_counts_match_the_documented_figures(dimensions):
+    """README's top-line summary — "1.22M listening events · 45,000 users ·
+    100 tracks · 4 platforms · full year 2024" — has its stream and user
+    counts protected transitively via the exact full_scale tests below.
+    Track and platform counts were not: nothing failed if --tracks' default
+    changed or a fifth platform got added, even though the README states
+    both as exact figures."""
+    tracks, platforms = dimensions
+    assert len(tracks) == 100, f"{len(tracks)} tracks, README says 100"
+    assert len(platforms) == 4, f"{len(platforms)} platforms, README says 4"
+
+
 # --- retention: the number the project uses to make its point -------------
 
 
@@ -281,12 +306,24 @@ def test_the_gap_between_reach_and_retention_is_the_finding(both):
 def test_raw_monthly_volume_tracks_user_growth_not_season(both):
     """Raw volume is NOT a seasonal signal: it grows with the user base.
     Documenting it as seasonality would credit summer campaigns for growth
-    that was just accumulated signups."""
+    that was just accumulated signups. business_questions.md quotes both
+    halves of this precisely — "roughly three times ... because it has
+    twice the active users" — so both ratios are checked, not just a
+    one-sided floor on streams that would also pass a 6x drift."""
     streams, _, _ = both
-    by_month = streams.assign(m=pd.to_datetime(streams.listen_date).dt.month).groupby("m").size()
-    assert by_month[8] > by_month[1] * 2, (
-        "August no longer has far more streams than January: the user-base "
-        "growth has disappeared from the model, and Q5 needs rewriting"
+    m = pd.to_datetime(streams.listen_date).dt.month
+    by_month = streams.assign(m=m).groupby("m").size()
+    active_by_month = streams.assign(m=m).groupby("m").user_id.nunique()
+
+    stream_ratio = by_month[8] / by_month[1]
+    active_ratio = active_by_month[8] / active_by_month[1]
+    assert 2.5 <= stream_ratio <= 3.5, (
+        f"August/January streams ratio {stream_ratio:.2f}x, documented as "
+        f"'roughly three times'"
+    )
+    assert 1.7 <= active_ratio <= 2.5, (
+        f"August/January active-user ratio {active_ratio:.2f}x, documented "
+        f"as 'twice the active users'"
     )
 
 
@@ -415,15 +452,19 @@ def test_royalty_is_only_paid_on_a_real_listen(both):
 
 
 def test_retention_at_april_matches_the_dashboard(users):
-    """The dashboard reports 92.27% at April and 82.28% at year end: two
-    points on the same curve. With a uniform churn offset, April read
-    96.3% — churn has to be front-loaded, as it is in reality and in the
-    loaded data."""
+    """docs/dashboard.md's reconciliation table: 92.27% at April reproduces
+    exactly (same in both the regenerated and shipped-.pbix columns); year
+    end is where the two diverge — 82.16% regenerated/authoritative against
+    82.28% in the shipped .pbix, a disclosed ~1% gap from an earlier
+    generator version. This test targets the **regenerated** figure
+    (82.16%): that's the one a fresh clone actually reproduces. With a
+    uniform churn offset, April read 96.3% instead of ~92% — churn has to
+    be front-loaded, as it is in reality and in the loaded data."""
     churn = pd.to_datetime(users.churn_date)
     april = (churn > "2024-04-30").mean() * 100
     year_end = (churn > "2024-12-31").mean() * 100
     assert 91 <= april <= 93.5, f"April retention {april:.2f}%, dashboard 92.27%"
-    assert 81 <= year_end <= 83.5, f"year-end retention {year_end:.2f}%, dashboard 82.28%"
+    assert 80.5 <= year_end <= 83, f"year-end retention {year_end:.2f}%, dashboard's regenerated figure 82.16%"
     assert april > year_end, "retention has to decline over the course of the year"
 
 

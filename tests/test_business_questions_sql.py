@@ -100,6 +100,10 @@ def test_q6_genre_completion_stays_flat(run_query):
     spread = q6[col].max() - q6[col].min()
     assert q6[col].mean() < 100, "completion looks like a percentage >100"
     assert spread < 3.0, f"completion by genre now varies by {spread:.2f}: an effect exists"
+    assert 55 <= q6[col].mean() <= 61, (
+        f"completion averages {q6[col].mean():.1f}%, documented as ~58%. Flat across "
+        f"genres isn't the whole claim — the level itself is quoted too."
+    )
 
 
 def test_q6_spread_matches_the_documented_figure_at_full_scale(run_query_full_scale):

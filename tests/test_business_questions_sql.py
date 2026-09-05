@@ -138,7 +138,7 @@ def test_q8_does_not_return_a_hundred_percent_every_month(run_query):
 
 def test_q8_reproduces_the_documented_range(run_query):
     q8 = run_query("Q8")["retention_pct"]
-    assert 87 <= q8.min() <= 92, f"minimum {q8.min():.1f}%, documented ~90%"
+    assert 87 <= q8.min() <= 92, f"minimum {q8.min():.1f}%, documented as 89% (the '89-97%' range)"
     assert 94 <= q8.max() <= 99, f"maximum {q8.max():.1f}%, documented ~97%"
 
 

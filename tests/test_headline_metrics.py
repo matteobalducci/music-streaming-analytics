@@ -374,7 +374,7 @@ def test_month_over_month_retention_is_not_trivially_one_hundred(both):
         "month-over-month retention is ~100%: the denominator is excluding "
         "everyone who didn't come back, which is the only thing this metric measures"
     )
-    assert 87 <= min(values) <= 92, f"minimum {min(values):.1f}%, documented ~90%"
+    assert 87 <= min(values) <= 92, f"minimum {min(values):.1f}%, documented as 89% (the '89-97%' range)"
     assert 94 <= max(values) <= 99, f"maximum {max(values):.1f}%, documented ~97%"
 
     # docs/business_questions.md names specific months, not just a range: "lowest in

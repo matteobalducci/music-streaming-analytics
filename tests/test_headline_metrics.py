@@ -118,6 +118,26 @@ def test_the_mobile_gap_is_about_five_points(streams):
     )
 
 
+DEVICE_SKIP = {
+    "Mobile iOS": 33.0, "Mobile Android": 32.9,
+    "Smart Speaker": 27.9, "Tablet": 28.0, "Desktop": 27.9,
+}
+
+
+def test_skip_rate_by_individual_device_matches_the_documented_breakdown(streams):
+    """docs/dashboard.md publishes all five devices individually
+    (33.0/32.9/28.1/28.0/27.9), not just the mobile-vs-other split above.
+    The mobile-gap test only constrains the two-bucket aggregate: five
+    individual devices could drift against each other — Smart Speaker down,
+    Desktop up — and still average out to the same ~33%/~28% split while
+    falsifying the specific per-device numbers this table publishes."""
+    by_device = streams.groupby("device_type").is_skipped.mean() * 100
+    for device, expected in DEVICE_SKIP.items():
+        assert abs(by_device[device] - expected) <= 2.0, (
+            f"{device}: {by_device[device]:.1f}%, documented ~{expected}%"
+        )
+
+
 # --- overall shape --------------------------------------------------------
 
 
@@ -198,6 +218,18 @@ def test_subscription_mix_matches_the_documented_split(users):
         assert abs(mix[plan] - expected) < 2.5, (
             f"{plan}: {mix[plan]:.1f}%, expected ~{expected}%"
         )
+
+
+def test_premium_share_matches_the_documented_figure(users):
+    """README/business_questions.md state Premium (all three paid plans
+    combined) is ~55% of users. The per-plan test above bounds each of the
+    four segments independently at +-2.5pp: taken to each bound at once, the
+    three Premium segments could sum to anywhere from 42.5% to 62.5% while
+    every individual assertion still passes. That's a much wider band than
+    the documented ~55%, so the combined share needs its own check."""
+    mix = users.subscription_plan.value_counts(normalize=True) * 100
+    premium = 100 - mix["Free"]
+    assert 51 <= premium <= 59, f"Premium share {premium:.1f}%, documented ~55%"
 
 
 def test_free_is_the_largest_single_segment(users):
@@ -358,6 +390,18 @@ def test_revenue_actually_depends_on_the_plan(both):
     share = m.groupby("subscription_plan").revenue_generated.sum()
     premium = share[share.index != "Free"].sum() / share.sum() * 100
     assert 78 <= premium <= 86, f"Premium revenue share {premium:.1f}%, documented ~82%"
+
+    # docs/dashboard.md and business_questions.md also name the two absolute
+    # per-stream rates directly (~$0.0079 / ~$0.0018) — the ratio and revenue-
+    # share checks above could both hold under a proportional rescale of
+    # REVENUE_PER_STREAM that would still falsify these specific figures.
+    assert abs(per_stream["Premium Individual"] - 0.0079) < 0.0015, (
+        f"Premium Individual revenue/stream ${per_stream['Premium Individual']:.4f}, "
+        f"documented ~$0.0079"
+    )
+    assert abs(per_stream["Free"] - 0.0018) < 0.0006, (
+        f"Free revenue/stream ${per_stream['Free']:.4f}, documented ~$0.0018"
+    )
 
 
 def test_royalty_is_only_paid_on_a_real_listen(both):

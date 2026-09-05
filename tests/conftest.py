@@ -112,3 +112,50 @@ def run_query(dataset):
 
     run.available = sorted(queries)
     return run
+
+
+@pytest.fixture(scope="session")
+def dataset_full_scale(tmp_path_factory):
+    """A second dataset at the repo's real, documented scale (45,000 users),
+    not the 20,000-user `dataset` above. Most SQL-question figures are
+    scale-invariant rates and hold fine at 20k, but Q6's documented spread
+    (~0.3pp) does not: it measures ~0.7pp at 20,000 users and only tightens
+    to ~0.3pp at the full 45,000, because it's a claim about how flat a
+    near-zero effect is, and that flatness is itself a function of sample
+    size. Kept as a separate fixture so only the query that actually needs
+    it pays the extra generation time."""
+    out = tmp_path_factory.mktemp("dataset_full_scale")
+    subprocess.run(
+        [sys.executable, os.path.join(ROOT, "scripts", "generate_datasets.py"),
+         "--out", str(out), "--users", "45000", "--seed", "42"],
+        check=True, capture_output=True,
+    )
+    return out
+
+
+@pytest.fixture(scope="session")
+def run_query_full_scale(dataset_full_scale):
+    """Same as `run_query`, against the 45,000-user dataset instead of 20,000."""
+    con = duckdb.connect()
+    con.execute("CREATE SCHEMA IF NOT EXISTS streaming")
+    for table, csv in TABLES.items():
+        path = dataset_full_scale / csv
+        if path.exists():
+            con.execute(
+                f"CREATE OR REPLACE TABLE {table} AS "
+                f"SELECT * FROM read_csv_auto('{path}', header=true)"
+            )
+
+    with open(SQL_FILE, encoding="utf-8") as fh:
+        queries = split_queries(fh.read())
+
+    def run(name: str) -> pd.DataFrame:
+        if name not in queries:
+            raise KeyError(f"{name} not found in {os.path.basename(SQL_FILE)}: "
+                           f"present {sorted(queries)}")
+        statement = queries[name].replace("`", '"')
+        duck = sqlglot.transpile(statement, read="bigquery", write="duckdb")[0]
+        return con.execute(duck).df()
+
+    run.available = sorted(queries)
+    return run

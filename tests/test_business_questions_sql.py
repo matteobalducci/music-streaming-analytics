@@ -102,6 +102,22 @@ def test_q6_genre_completion_stays_flat(run_query):
     assert spread < 3.0, f"completion by genre now varies by {spread:.2f}: an effect exists"
 
 
+def test_q6_spread_matches_the_documented_figure_at_full_scale(run_query_full_scale):
+    """business_questions.md names a specific spread — 0.3pp — not just "flat".
+    That figure only holds at the repo's real 45,000-user scale: at the
+    20,000-user scale the test above runs on, the same near-zero effect
+    measures ~0.7pp, more than double, while still comfortably passing the
+    generous `< 3.0` bound (which exists to catch a real genre effect
+    appearing, not to protect this specific number). This test checks the
+    number itself, at the scale it's actually quoted for."""
+    q6 = run_query_full_scale("Q6")
+    col = [c for c in q6.columns if "completion" in c.lower()][0]
+    spread = q6[col].max() - q6[col].min()
+    assert spread < 1.0, (
+        f"completion by genre spread {spread:.2f}pp at full scale, documented ~0.3pp"
+    )
+
+
 # --- Q8 · the bug that started this file ---------------------------------
 
 

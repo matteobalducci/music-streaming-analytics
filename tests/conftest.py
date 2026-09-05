@@ -55,10 +55,22 @@ def dataset(tmp_path_factory):
 
 @pytest.fixture(scope="session")
 def frames(dataset):
+    """The 20,000-user dataset as DataFrames — shared with
+    test_headline_metrics.py's `both` fixture so the two files don't each
+    pay for their own independent generation at the same scale/seed."""
     return {
         "streams": pd.read_csv(dataset / "F_Streams.csv"),
         "users": pd.read_csv(dataset / "D_Users.csv"),
         "tracks": pd.read_csv(dataset / "D_Tracks.csv"),
+    }
+
+
+@pytest.fixture(scope="session")
+def frames_full_scale(dataset_full_scale):
+    """Same as `frames`, at the full 45,000-user scale — shared with
+    test_headline_metrics.py's `full_scale` fixture."""
+    return {
+        "streams": pd.read_csv(dataset_full_scale / "F_Streams.csv"),
     }
 
 

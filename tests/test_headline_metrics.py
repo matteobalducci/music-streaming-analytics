@@ -43,15 +43,22 @@ EXPECTED = {
 
 
 @pytest.fixture(scope="module")
-def streams(tmp_path_factory):
-    """Generate a deterministic sample and read the fact table."""
-    out = tmp_path_factory.mktemp("data")
+def sample_8k(tmp_path_factory):
+    """One 8,000-user/seed-42 generation, shared by `streams` and `users`
+    below — they used to each generate their own independent copy."""
+    out = tmp_path_factory.mktemp("sample_8k")
     subprocess.run(
         [sys.executable, os.path.join(ROOT, "scripts", "generate_datasets.py"),
          "--out", str(out), "--users", "8000", "--seed", "42"],
         check=True, capture_output=True,
     )
-    return pd.read_csv(out / "F_Streams.csv")
+    return out
+
+
+@pytest.fixture(scope="module")
+def streams(sample_8k):
+    """The fact table from the shared 8,000-user sample."""
+    return pd.read_csv(sample_8k / "F_Streams.csv")
 
 
 def pct(series) -> float:
@@ -192,14 +199,10 @@ def test_dimension_counts_match_the_documented_figures(dimensions):
 
 
 @pytest.fixture(scope="module")
-def users(tmp_path_factory):
-    out = tmp_path_factory.mktemp("users")
-    subprocess.run(
-        [sys.executable, os.path.join(ROOT, "scripts", "generate_datasets.py"),
-         "--out", str(out), "--users", "8000", "--seed", "42"],
-        check=True, capture_output=True,
-    )
-    return pd.read_csv(out / "D_Users.csv")
+def users(sample_8k):
+    """The user dimension from the same shared 8,000-user sample as
+    `streams` above."""
+    return pd.read_csv(sample_8k / "D_Users.csv")
 
 
 def test_retention_matches_the_documented_figure(users):
@@ -268,16 +271,11 @@ def test_free_is_the_largest_single_segment(users):
 
 
 @pytest.fixture(scope="module")
-def both(tmp_path_factory):
-    out = tmp_path_factory.mktemp("both")
-    subprocess.run(
-        [sys.executable, os.path.join(ROOT, "scripts", "generate_datasets.py"),
-         "--out", str(out), "--users", "20000", "--seed", "42"],
-        check=True, capture_output=True,
-    )
-    return (pd.read_csv(out / "F_Streams.csv"),
-            pd.read_csv(out / "D_Users.csv"),
-            pd.read_csv(out / "D_Tracks.csv"))
+def both(frames):
+    """The same 20,000-user/seed-42 dataset conftest.py's SQL tests run
+    against — reused here via the `frames` fixture instead of a second,
+    independent generation. Cuts ~7s of duplicate subprocess time per run."""
+    return frames["streams"], frames["users"], frames["tracks"]
 
 
 def test_the_naive_kpi_reads_near_100_percent(both):
@@ -506,19 +504,15 @@ def test_like_rate_matches_the_documented_figure(both):
 
 
 @pytest.fixture(scope="module")
-def full_scale(tmp_path_factory):
-    """The one fixture at the repo's real, documented scale (45,000 users) —
-    not the small samples above, kept fast for CI. This is slower
-    (~20-30s), which is the price of actually protecting the three absolute
-    counts in the "authoritative" table: they scale with user count, so no
-    ratio computed on a smaller sample can stand in for them."""
-    out = tmp_path_factory.mktemp("full_scale")
-    subprocess.run(
-        [sys.executable, os.path.join(ROOT, "scripts", "generate_datasets.py"),
-         "--out", str(out), "--users", "45000", "--seed", "42"],
-        check=True, capture_output=True,
-    )
-    return pd.read_csv(out / "F_Streams.csv")
+def full_scale(frames_full_scale):
+    """The repo's real, documented scale (45,000 users) — not the small
+    samples above, kept fast for CI. Reused via conftest.py's
+    `frames_full_scale` (which Q6's SQL test also depends on for the same
+    scale/seed), rather than a second independent generation: protecting the
+    three absolute counts in the "authoritative" table still needs the full
+    scale (no ratio computed on a smaller sample can stand in for them), but
+    it doesn't need paying for that generation twice."""
+    return frames_full_scale["streams"]
 
 
 def test_total_active_users_matches_the_documented_figure(full_scale):

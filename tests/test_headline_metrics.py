@@ -120,7 +120,7 @@ def test_the_mobile_gap_is_about_five_points(streams):
 
 DEVICE_SKIP = {
     "Mobile iOS": 33.0, "Mobile Android": 32.9,
-    "Smart Speaker": 27.9, "Tablet": 28.0, "Desktop": 27.9,
+    "Smart Speaker": 28.1, "Tablet": 28.0, "Desktop": 27.9,
 }
 
 
@@ -496,10 +496,13 @@ def test_gross_margin_matches_the_documented_figure(both):
 
 
 def test_like_rate_matches_the_documented_figure(both):
-    """Documented as 14.9%."""
+    """Documented as 14.9%. Measured spread across scales (20k: 14.86%, 45k:
+    14.90%) is 0.04pp — tight enough that the sibling RPM/Gross Margin
+    checks in this section use a much narrower band proportionally; this
+    one was originally left needlessly wide."""
     streams, _, _ = both
     like_rate = streams.is_liked.mean() * 100
-    assert 12.5 <= like_rate <= 17.5, f"Like Rate {like_rate:.1f}%, documented 14.9%"
+    assert 13.4 <= like_rate <= 16.4, f"Like Rate {like_rate:.1f}%, documented 14.9%"
 
 
 @pytest.fixture(scope="module")

@@ -163,9 +163,18 @@ def test_q9_normalises_by_active_users(run_query):
         "the user base no longer grows over the course of the year"
     )
     idx = q9["seasonal_index"]
-    assert idx.iloc[5:8].mean() > 110, f"summer peak {idx.iloc[5:8].mean():.0f}"
-    assert idx.iloc[11] > 105, f"December {idx.iloc[11]:.0f}"
+    # Bilateral, matching test_headline_metrics.py's stricter pandas version of
+    # this same check: this one actually executes the SQL query (transpiled to
+    # DuckDB), so it's the only test that would catch a bug *in the query* —
+    # the pandas version recomputes the index independently and never runs Q9
+    # at all. One-sided floors here would pass a uniform-scaling bug in the SQL
+    # (e.g. a 1.5x factor) that overstated every seasonal swing by 50%+ while
+    # leaving February the argmin.
+    summer = idx.iloc[5:8].mean()
+    assert 110 < summer < 125, f"summer peak {summer:.0f}, documented ~116 (+16%)"
+    assert 105 < idx.iloc[11] < 120, f"December {idx.iloc[11]:.0f}, documented ~111 (+11%)"
     assert idx.idxmin() == 1, "the minimum is no longer February"
+    assert 75 <= idx.iloc[1] <= 88, f"February {idx.iloc[1]:.0f}, documented ~81 (-19%)"
 
 
 # --- Q10 · the weekend lift ----------------------------------------------

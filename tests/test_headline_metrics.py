@@ -271,9 +271,19 @@ def test_seasonality_appears_once_normalised_by_active_users(both):
     per_user = g.n / g.active
     idx = per_user / per_user.mean() * 100
 
-    assert idx.iloc[5:8].mean() > 110, f"summer peak at {idx.iloc[5:8].mean():.0f}, expected ~115"
-    assert idx.iloc[11] > 105, f"December at {idx.iloc[11]:.0f}, expected ~110"
+    summer = idx.iloc[5:8].mean()
+    assert 110 < summer < 125, (
+        f"summer peak at {summer:.0f}, documented as ~+16% (index ~116). A test that "
+        f"only floors this would stay green even if the lift drifted to +40%."
+    )
+    assert 105 < idx.iloc[11] < 120, (
+        f"December at {idx.iloc[11]:.0f}, documented as ~+11% (index ~111)."
+    )
     assert idx.idxmin().month == 2, "the minimum is no longer February"
+    assert 75 <= idx.iloc[1] <= 88, (
+        f"February at {idx.iloc[1]:.0f}, documented as ~-19% (index ~81). Being the "
+        f"minimum isn't enough on its own — the magnitude is part of the claim too."
+    )
 
 
 def test_month_over_month_retention_is_not_trivially_one_hundred(both):
@@ -297,6 +307,21 @@ def test_month_over_month_retention_is_not_trivially_one_hundred(both):
     )
     assert 87 <= min(values) <= 92, f"minimum {min(values):.1f}%, documented ~90%"
     assert 94 <= max(values) <= 99, f"maximum {max(values):.1f}%, documented ~97%"
+
+    # docs/business_questions.md names specific months, not just a range: "lowest in
+    # February and dipping again in September". values[0] is the Jan->Feb transition
+    # (retention observed in February); values[7] is Aug->Sep (retention observed in
+    # September). Checking only min()/max() would stay green even if the low point
+    # moved to a different month or the September dip flattened out.
+    assert values.index(min(values)) == 0, (
+        "the minimum is no longer the January->February transition: the documented "
+        "'lowest in February' claim needs rewriting"
+    )
+    assert values[7] < values[6] and values[7] < values[8], (
+        f"September ({values[7]:.1f}%) is no longer a local dip against August "
+        f"({values[6]:.1f}%) and October ({values[8]:.1f}%): the documented "
+        f"'dipping again in September' claim needs rewriting"
+    )
 
 
 # --- temporal integrity and monetisation -----------------------------------
@@ -356,6 +381,82 @@ def test_retention_at_april_matches_the_dashboard(users):
     assert 91 <= april <= 93.5, f"April retention {april:.2f}%, dashboard 92.27%"
     assert 81 <= year_end <= 83.5, f"year-end retention {year_end:.2f}%, dashboard 82.28%"
     assert april > year_end, "retention has to decline over the course of the year"
+
+
+# --- docs/dashboard.md's "Regenerated (authoritative)" table --------------
+#
+# That table names precise figures — RPM $128.14, Gross Margin 52.4%, Like
+# Rate 14.9%, and (at full scale) 43,304 active users / 1,215,000 streams /
+# $5,549 revenue — and calls itself authoritative. Until this section, none
+# of the six had a test: every other headline number in this file is a
+# contract, these were a claim on the honour system.
+
+
+def test_rpm_matches_the_documented_figure(both):
+    """RPM = revenue / active users * 1000. Documented as $128.14. It's a
+    per-user average, so it holds at any sample size — unlike the raw
+    active-user/stream counts below, which are tied to the full 45,000-user
+    run and are checked separately at that exact scale."""
+    streams, _, _ = both
+    rpm = streams.revenue_generated.sum() / streams.user_id.nunique() * 1000
+    assert 122 <= rpm <= 135, f"RPM ${rpm:.2f}, documented $128.14"
+
+
+def test_gross_margin_matches_the_documented_figure(both):
+    """(Revenue - Royalty Cost) / Revenue. Documented as 52.4%."""
+    streams, _, _ = both
+    revenue = streams.revenue_generated.sum()
+    margin = (revenue - streams.royalty_cost.sum()) / revenue * 100
+    assert 49 <= margin <= 56, f"Gross Margin {margin:.1f}%, documented 52.4%"
+
+
+def test_like_rate_matches_the_documented_figure(both):
+    """Documented as 14.9%."""
+    streams, _, _ = both
+    like_rate = streams.is_liked.mean() * 100
+    assert 12.5 <= like_rate <= 17.5, f"Like Rate {like_rate:.1f}%, documented 14.9%"
+
+
+@pytest.fixture(scope="module")
+def full_scale(tmp_path_factory):
+    """The one fixture at the repo's real, documented scale (45,000 users) —
+    not the small samples above, kept fast for CI. This is slower
+    (~20-30s), which is the price of actually protecting the three absolute
+    counts in the "authoritative" table: they scale with user count, so no
+    ratio computed on a smaller sample can stand in for them."""
+    out = tmp_path_factory.mktemp("full_scale")
+    subprocess.run(
+        [sys.executable, os.path.join(ROOT, "scripts", "generate_datasets.py"),
+         "--out", str(out), "--users", "45000", "--seed", "42"],
+        check=True, capture_output=True,
+    )
+    return pd.read_csv(out / "F_Streams.csv")
+
+
+def test_total_active_users_matches_the_documented_figure(full_scale):
+    """Documented as 43,304 — an absolute count, only meaningful at the
+    repo's real 45,000-user scale."""
+    active = full_scale.user_id.nunique()
+    assert active == 43304, (
+        f"Total Active Users {active}, documented 43,304 at --users 45000 --seed 42. "
+        f"If the generator changed deliberately, update docs/dashboard.md's "
+        f"'Regenerated (authoritative)' row in the same commit."
+    )
+
+
+def test_total_streams_matches_the_documented_figure(full_scale):
+    """Documented as 1,215,000 — deterministic given users * STREAMS_PER_USER,
+    so this is an exact match, not a tolerance."""
+    assert len(full_scale) == 1215000, (
+        f"Total Streams {len(full_scale)}, documented 1,215,000"
+    )
+
+
+def test_total_revenue_matches_the_documented_figure(full_scale):
+    """Documented as $5,549 — a float sum, so a cent of tolerance for
+    floating-point accumulation, not for the model itself."""
+    revenue = full_scale.revenue_generated.sum()
+    assert abs(revenue - 5548.84) < 1.0, f"Total Revenue ${revenue:.2f}, documented $5,549"
 
 
 def test_churn_is_front_loaded(users):

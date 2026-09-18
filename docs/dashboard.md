@@ -35,12 +35,18 @@ constraint that made it the one chart worth putting two forecast transforms on i
 
 ## Pages (4)
 
-| # | Page | Contents |
-|---|---|---|
-| 1 | **Growth & Monetization** | 3 KPI cards (Total Active Users, RPM, **Retention Rate %**), `Monthly Active Users Growth` (line), `Premium vs Free Mix` (donut), `Retention Rate Trend` (line, churn-based), Month slicer |
-| 2 | **Deep Dive & Engagement** | `Streams by Hour of Day` (area, zero-based axis), `Skip Rate %` by device, `Like Rate %` (scatter, with a native trend line), `Main Genre` (treemap), map, Country + Genre slicers |
-| 3 | **Forecast & Financials** | 3 KPI cards (Total Revenue, RPM, Gross Margin %), `Total Revenue by Year and Quarter` with two native Power BI forecast trends of different lengths layered on the same series, revenue by subscription plan, revenue by country (map) |
-| 4 | **Machine Learning Insights** | `Key Influencers` (explains `is_skipped`, includes `stream_source`) and `Decomposition Tree` — Power BI's built-in ML visuals for driver analysis and executive drill-down |
+| # | Page | Contents | Screenshot |
+|---|---|---|---|
+| 1 | **Growth & Monetization** | 3 KPI cards (Total Active Users, RPM, **Retention Rate %**), `Monthly Active Users Growth` (line), `Premium vs Free Mix` (donut), `Retention Rate Trend` (line, churn-based), Month slicer | [`dashboard/screenshots/01_growth_monetization.jpg`](../dashboard/screenshots/01_growth_monetization.jpg) |
+| 2 | **Deep Dive & Engagement** | `Streams by Hour of Day` (area, zero-based axis), `Skip Rate %` by device, `Like Rate %` (scatter, with a native trend line), `Main Genre` (treemap), map, Country + Genre slicers | [`dashboard/screenshots/02_deep_dive_engagement.jpg`](../dashboard/screenshots/02_deep_dive_engagement.jpg) |
+| 3 | **Forecast & Financials** | 3 KPI cards (Total Revenue, RPM, Gross Margin %), `Total Revenue by Year and Quarter` with two native Power BI forecast trends of different lengths layered on the same series, revenue by subscription plan, revenue by country (map) | [`dashboard/screenshots/03_forecast_financials.jpg`](../dashboard/screenshots/03_forecast_financials.jpg) |
+| 4 | **Machine Learning Insights** | `Key Influencers` (explains `is_skipped`, includes `stream_source`) and `Decomposition Tree` — Power BI's built-in ML visuals for driver analysis and executive drill-down | [`dashboard/screenshots/04_machine_learning_insights.jpg`](../dashboard/screenshots/04_machine_learning_insights.jpg) |
+
+Screenshots are real captures of the shipped `.pbix` open in Power BI Desktop (not
+a recreation) — every KPI they show is cross-checked below against the data loaded
+in BigQuery. `docs/screenshots/*.png` (linked from the main README) are a separate,
+earlier set: matplotlib recreations of individual findings for the narrative in
+`business_questions.md`, not the dashboard UI itself.
 
 ## Key measures (DAX)
 

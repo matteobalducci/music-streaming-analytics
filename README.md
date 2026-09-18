@@ -34,6 +34,27 @@ CI rather than left to drift.
 
 ---
 
+## 🖥️ Power BI dashboard
+
+<table>
+<tr>
+<td width="50%"><img src="dashboard/screenshots/01_growth_monetization.jpg" alt="Growth & Monetization page"/></td>
+<td width="50%"><img src="dashboard/screenshots/02_deep_dive_engagement.jpg" alt="Deep Dive & Engagement page"/></td>
+</tr>
+<tr>
+<td width="50%"><img src="dashboard/screenshots/03_forecast_financials.jpg" alt="Forecast & Financials page"/></td>
+<td width="50%"><img src="dashboard/screenshots/04_machine_learning_insights.jpg" alt="Machine Learning Insights page"/></td>
+</tr>
+</table>
+
+4 pages, built on the raw star schema loaded into BigQuery: Growth & Monetization,
+Deep Dive & Engagement, Forecast & Financials, Machine Learning Insights (Key
+Influencers + Decomposition Tree). Every KPI shown is cross-checked against the
+loaded data — see [`docs/dashboard.md`](docs/dashboard.md) for the full
+measure-by-measure verification. Report file: [`dashboard/Music_Stream_Dashboard.pbix`](dashboard/Music_Stream_Dashboard.pbix).
+
+---
+
 ## 🧠 The metrics that matter (and why)
 
 | Metric | What it measures | Why a streaming company cares |

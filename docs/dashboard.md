@@ -1,5 +1,8 @@
 # Power BI dashboard — contents
 
+> Looking for the Google-stack version? See [`docs/looker_dashboard.md`](looker_dashboard.md)
+> — same findings, live BigQuery data instead of this frozen snapshot, [open it here](https://lookerstudio.google.com/reporting/00845386-7ca0-4cbd-9e5e-96ec0d42c012).
+
 The report ([`dashboard/Music_Stream_Dashboard.pbix`](../dashboard/Music_Stream_Dashboard.pbix))
 is built on a Power BI data model with **5 tables**: `F_Streams` (fact) plus
 `D_Users`, `D_Tracks`, `D_Platform`, `D_Time`.

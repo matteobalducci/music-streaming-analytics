@@ -55,6 +55,19 @@ measure-by-measure verification. Report file: [`dashboard/Music_Stream_Dashboard
 
 ---
 
+## 📈 Looker Studio dashboard
+
+The Google-stack companion to the Power BI report above — 4 pages (Growth &
+Monetization, Engagement, Financials, Key Drivers), built on two dbt marts made for
+it (`mart_streaming_flat`, `mart_user_retention`) and reading **live** from
+BigQuery rather than a frozen snapshot.
+
+**[Open the live report →](https://lookerstudio.google.com/reporting/00845386-7ca0-4cbd-9e5e-96ec0d42c012)**
+— fully interactive, no download or account needed. Every figure it shows is
+cross-checked against the loaded data — see [`docs/looker_dashboard.md`](docs/looker_dashboard.md).
+
+---
+
 ## 🧠 The metrics that matter (and why)
 
 | Metric | What it measures | Why a streaming company cares |

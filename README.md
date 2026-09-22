@@ -57,10 +57,12 @@ measure-by-measure verification. Report file: [`dashboard/Music_Stream_Dashboard
 
 ## 📈 Looker Studio dashboard
 
-The Google-stack companion to the Power BI report above — 4 pages (Growth &
-Monetization, Engagement, Financials, Key Drivers), built on two dbt marts made for
-it (`mart_streaming_flat`, `mart_user_retention`) and reading **live** from
-BigQuery rather than a frozen snapshot.
+The Google-stack companion to the Power BI report above — 5 pages (Growth &
+Monetization, Engagement, Financials, Key Drivers, Seasonality & Behavior), built
+on two dbt marts made for it (`mart_streaming_flat`, `mart_user_retention`) and
+reading **live** from BigQuery rather than a frozen snapshot. The 5th page has no
+Power BI equivalent — it charts a seasonality/weekend-lift finding that previously
+lived only in SQL/prose, so the two dashboards aren't just the same content twice.
 
 **[Open the live report →](https://lookerstudio.google.com/reporting/00845386-7ca0-4cbd-9e5e-96ec0d42c012)**
 — fully interactive, no download or account needed. Every figure it shows is

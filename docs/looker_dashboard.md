@@ -22,7 +22,7 @@ always reflect whatever is currently in BigQuery — which is exactly the **"Reg
 frozen numbers in the shipped `.pbix`. The two dashboards are expected to differ by
 the same ~1% documented there, and they do (see below).
 
-## Pages (4)
+## Pages (5)
 
 | # | Page | Contents |
 |---|---|---|
@@ -30,6 +30,7 @@ the same ~1% documented there, and they do (see below).
 | 2 | **Engagement** | Skip Rate % by device (bar), streams by genre (table), streams by country (geo map) |
 | 3 | **Financials** | 3 scorecards (Total Revenue, RPM, Gross Margin %), monthly revenue trend (line), revenue by plan (bar) |
 | 4 | **Key Drivers** | Skip Rate % by `stream_source` (bar) — Looker Studio has no native equivalent of Power BI's Key Influencers / Decomposition Tree, so this page shows the raw driver data instead and cites the [skip-prediction model](https://github.com/matteobalducci/streaming-insights-copilot) as independent confirmation |
+| 5 | **Seasonality & Behavior** | Streams per Active User by month (bar, seasonality shape), Avg Streams per Day — weekend vs. weekday (bar), Like Rate % by genre (bar). This page has **no Power BI equivalent** — it surfaces a finding (`docs/business_questions.md` Q5/Q9/Q10, seasonality and weekend lift) that was previously documented in SQL/prose only and never actually charted in either dashboard, plus the `Like Rate %` metric, which existed as a calculated field but wasn't attached to any visual until now |
 
 ## Calculated fields
 
@@ -42,6 +43,9 @@ the same ~1% documented there, and they do (see below).
 | Skip Rate % | `AVG(CASE WHEN is_skipped THEN 1 ELSE 0 END)` | `mart_streaming_flat` |
 | Gross Margin % | `(SUM(revenue_generated) - SUM(royalty_cost)) / SUM(revenue_generated)` | `mart_streaming_flat` |
 | Total Revenue | `SUM(revenue_generated)` | `mart_streaming_flat` |
+| Like Rate % | `AVG(CASE WHEN is_liked THEN 1 ELSE 0 END)` | `mart_streaming_flat` |
+| Streams per Active User | `COUNT(stream_id) / COUNT_DISTINCT(user_id)`, by `month` | `mart_streaming_flat` |
+| Avg Streams per Day | `COUNT(stream_id) / COUNT_DISTINCT(listen_date)`, by `is_weekend` | `mart_streaming_flat` |
 
 ## Data-verified
 
@@ -60,6 +64,9 @@ independent BI tools, exact match:
 | Gross Margin % | 52.43% | 52.4% |
 | Skip Rate % by `stream_source` (Algorithmic / Editorial / Search) | ~42% / ~22% / ~22% | 42.0% / 22.1% / 21.9% (`docs/business_questions.md`) |
 | Premium vs Free mix (Total Active Users) | Free 45.1%, Premium Individual 29.7%, Premium Student 15%, Premium Family 10.2% | matches the `subscription_plan` split reported in `docs/business_questions.md` |
+| Weekend lift (Avg Streams per Day, weekend vs. weekday) | ~3.9K vs. ~3.1K → **+26%** | **+25%** (`docs/business_questions.md` Q10) |
+| Like Rate % (overall, avg across genres) | ~13–15% per genre | 14.9% (`docs/dashboard.md`) |
+| Streams per Active User by month | low in Feb, peaks Jun–Aug | matches the documented seasonal shape — summer +16%, Feb −19% (`docs/business_questions.md` Q9) |
 
 ## Known limitations vs. the Power BI report
 

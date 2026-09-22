@@ -163,10 +163,12 @@ music-streaming-analytics/
 │   ├── test_business_questions_sql.py # executes sql/analysis/ (via DuckDB) and checks the output
 │   └── conftest.py                    # the DuckDB/sqlglot runner behind the test above
 ├── dashboard/
-│   └── Music_Stream_Dashboard.pbix   # Power BI report — see docs/dashboard.md
+│   ├── Music_Stream_Dashboard.pbix   # Power BI report — see docs/dashboard.md
+│   └── screenshots/                  # Power BI (root) + Looker Studio (looker/) page captures
 └── docs/
     ├── business_questions.md
     ├── dashboard.md
+    ├── looker_dashboard.md
     ├── gcp_setup_notes.md
     └── screenshots/
 ```

@@ -24,13 +24,17 @@ the same ~1% documented there, and they do (see below).
 
 ## Pages (5)
 
-| # | Page | Contents |
-|---|---|---|
-| 1 | **Growth & Monetization** | 3 scorecards (Total Active Users, RPM, Retention Rate %), monthly active-users trend by plan (line), Free/Premium mix (donut) |
-| 2 | **Engagement** | Skip Rate % by device (bar), streams by genre (table), streams by country (geo map) |
-| 3 | **Financials** | 3 scorecards (Total Revenue, RPM, Gross Margin %), monthly revenue trend (line), revenue by plan (bar) |
-| 4 | **Key Drivers** | Skip Rate % by `stream_source` (bar) — Looker Studio has no native equivalent of Power BI's Key Influencers / Decomposition Tree, so this page shows the raw driver data instead and cites the [skip-prediction model](https://github.com/matteobalducci/streaming-insights-copilot) as independent confirmation |
-| 5 | **Seasonality & Behavior** | Streams per Active User by month (bar, seasonality shape), Avg Streams per Day — weekend vs. weekday (bar), Like Rate % by genre (bar). This page has **no Power BI equivalent** — it surfaces a finding (`docs/business_questions.md` Q5/Q9/Q10, seasonality and weekend lift) that was previously documented in SQL/prose only and never actually charted in either dashboard, plus the `Like Rate %` metric, which existed as a calculated field but wasn't attached to any visual until now |
+| # | Page | Contents | Screenshot |
+|---|---|---|---|
+| 1 | **Growth & Monetization** | 3 scorecards (Total Active Users, RPM, Retention Rate %), monthly active-users trend by plan (line), Free/Premium mix (donut) | [`dashboard/screenshots/looker/01_growth_monetization.jpg`](../dashboard/screenshots/looker/01_growth_monetization.jpg) |
+| 2 | **Engagement** | Skip Rate % by device (bar), streams by genre (table), streams by country (geo map) | [`dashboard/screenshots/looker/02_engagement.jpg`](../dashboard/screenshots/looker/02_engagement.jpg) |
+| 3 | **Financials** | 3 scorecards (Total Revenue, RPM, Gross Margin %), monthly revenue trend (line), revenue by plan (bar) | [`dashboard/screenshots/looker/03_financials.jpg`](../dashboard/screenshots/looker/03_financials.jpg) |
+| 4 | **Key Drivers** | Skip Rate % by `stream_source` (bar) — Looker Studio has no native equivalent of Power BI's Key Influencers / Decomposition Tree, so this page shows the raw driver data instead and cites the [skip-prediction model](https://github.com/matteobalducci/streaming-insights-copilot) as independent confirmation | [`dashboard/screenshots/looker/04_key_drivers.jpg`](../dashboard/screenshots/looker/04_key_drivers.jpg) |
+| 5 | **Seasonality & Behavior** | Streams per Active User by month (bar, seasonality shape), Avg Streams per Day — weekend vs. weekday (bar), Like Rate % by genre (bar). This page has **no Power BI equivalent** — it surfaces a finding (`docs/business_questions.md` Q5/Q9/Q10, seasonality and weekend lift) that was previously documented in SQL/prose only and never actually charted in either dashboard, plus the `Like Rate %` metric, which existed as a calculated field but wasn't attached to any visual until now | [`dashboard/screenshots/looker/05_seasonality_behavior.jpg`](../dashboard/screenshots/looker/05_seasonality_behavior.jpg) |
+
+Screenshots are real captures of the live, published report (not a recreation) — every
+KPI they show is cross-checked below against the data loaded in BigQuery, same as the
+Power BI screenshots in [`docs/dashboard.md`](dashboard.md).
 
 ## Calculated fields
 

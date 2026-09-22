@@ -64,9 +64,25 @@ reading **live** from BigQuery rather than a frozen snapshot. The 5th page has n
 Power BI equivalent — it charts a seasonality/weekend-lift finding that previously
 lived only in SQL/prose, so the two dashboards aren't just the same content twice.
 
+<table>
+<tr>
+<td width="50%"><img src="dashboard/screenshots/looker/01_growth_monetization.jpg" alt="Growth & Monetization page"/></td>
+<td width="50%"><img src="dashboard/screenshots/looker/02_engagement.jpg" alt="Engagement page"/></td>
+</tr>
+<tr>
+<td width="50%"><img src="dashboard/screenshots/looker/03_financials.jpg" alt="Financials page"/></td>
+<td width="50%"><img src="dashboard/screenshots/looker/04_key_drivers.jpg" alt="Key Drivers page"/></td>
+</tr>
+<tr>
+<td width="50%"><img src="dashboard/screenshots/looker/05_seasonality_behavior.jpg" alt="Seasonality & Behavior page"/></td>
+<td width="50%"></td>
+</tr>
+</table>
+
 **[Open the live report →](https://lookerstudio.google.com/reporting/00845386-7ca0-4cbd-9e5e-96ec0d42c012)**
-— fully interactive, no download or account needed. Every figure it shows is
-cross-checked against the loaded data — see [`docs/looker_dashboard.md`](docs/looker_dashboard.md).
+— fully interactive, no download or account needed, and (unlike the screenshots
+above) always reflects the current data. Every figure it shows is cross-checked
+against the loaded data — see [`docs/looker_dashboard.md`](docs/looker_dashboard.md).
 
 ---
 
